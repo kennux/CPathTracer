@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include "tracer.h"
 
-void trace(TraceParameters params, mfloat* backbuffer)
+void trace(TraceParameters params, mfloat* backbuffer, long int* rayCount)
 {
     RandomState rand = time(NULL);
 
@@ -37,6 +37,7 @@ void trace(TraceParameters params, mfloat* backbuffer)
                 {
                     // Trace ray
                     HitInfo hitInfo;
+                    (*rayCount)++;
                     int hits = scene_Raycast(&hitInfo, params.scene, &ray, 0.01, params.maxDepth);
                     if (hits > 0)
                     {

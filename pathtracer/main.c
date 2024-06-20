@@ -64,8 +64,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 640;
-    int textureHeight = 480;
+    int textureWidth = 1280;
+    int textureHeight = 720;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -134,12 +134,20 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &scene;
-    params.samplesPerPixel = 2048;
+    params.samplesPerPixel = 256;
     params.camera = &cam;
-    params.maxBounces = 8;
+    params.maxBounces = 6;
     params.maxDepth = 10000;
 
-    trace(params, backbufferData);
+    long int rayCount = 0;
+    clock_t start = clock();
+    trace(params, backbufferData, &rayCount);
+    clock_t end = clock();
+
+    float seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
+    double megaRays = rayCount / 1000000.0;
+    float megaRaysPerSecond = megaRays / seconds;
+    printf("%.6f MRays processed in %.6f seconds | %.6f MRays/s!\n\n", megaRays, seconds, megaRaysPerSecond);
 
     // Load texture data
     char* textureData = malloc(textureWidth*textureHeight*4);

@@ -21,4 +21,4 @@ typedef struct TraceParameters
     int maxBounces;
 } TraceParameters;
 
-void trace(TraceParameters params, mfloat* backbuffer);
+void trace(TraceParameters params, mfloat* backbuffer, long int* rayCount);
