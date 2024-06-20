@@ -30,4 +30,18 @@ typedef struct Scene
     size_t materialCount;
 } Scene;
 
+typedef struct HitInfo
+{
+    Vec3f point;
+    Vec3f normal;
+    float distance;
+
+    Material* material;
+} HitInfo;
+
+/**
+ * @return The amount of hits
+ */
+int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, mfloat maxDist);
+
 #endif //CPATHTRACER_SCENE_H

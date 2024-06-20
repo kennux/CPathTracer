@@ -45,8 +45,8 @@ void camera_GetRay(Ray *outRay, Camera* camera, float u, float v, random_state* 
     random_in_unit_disk(&vec, rndState);
 
     Vec3f offset1, offset2, offset;
-    p_v3f_mul_f(&offset1, &u, vec.x * camera->lensRadius);
-    p_v3f_mul_f(&offset2, &v, vec.y * camera->lensRadius);
+    p_v3f_mul_f(&offset1, &camera->u, vec.x * camera->lensRadius);
+    p_v3f_mul_f(&offset2, &camera->v, vec.y * camera->lensRadius);
     p_v3f_add_v3f(&offset, &offset1, &offset2);
 
     p_v3f_add_v3f(&outRay->origin, &camera->origin, &offset);
@@ -54,5 +54,5 @@ void camera_GetRay(Ray *outRay, Camera* camera, float u, float v, random_state* 
     outRay->direction.x = (camera->lowerLeftCorner.x + u * camera->horizontal.x + v * camera->vertical.x - camera->origin.x - offset.x);
     outRay->direction.y = (camera->lowerLeftCorner.y + u * camera->horizontal.y + v * camera->vertical.y - camera->origin.y - offset.y);
     outRay->direction.z = (camera->lowerLeftCorner.z + u * camera->horizontal.z + v * camera->vertical.z - camera->origin.z - offset.z);
-    p_v3f_normalize(&outRay->direction);
+    p_v3f_normalize(&outRay->direction, &outRay->direction);
 }

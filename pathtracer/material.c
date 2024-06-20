@@ -4,4 +4,4 @@
 
 #include "material.h"
 
-void material_Scatter(Material* material, )
+// void material_Scatter(Material* material, )

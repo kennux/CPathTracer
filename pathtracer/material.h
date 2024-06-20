@@ -9,7 +9,7 @@
 
 typedef enum MaterialType
 {
-    Lambert
+    MaterialType_Lambert
 } MaterialType;
 
 typedef struct Material

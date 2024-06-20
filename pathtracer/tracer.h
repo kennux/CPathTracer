@@ -10,19 +10,10 @@
 #ifndef CPATHTRACER_TRACER_H
 #define CPATHTRACER_TRACER_H
 
-typedef struct HitInfo
-{
-    Vec3f point;
-    Vec3f normal;
-    float distance;
-
-    Material* material;
-} HitInfo;
-
 typedef struct TraceParameters
 {
-    int width;
-    int height;
+    int backbufferWidth;
+    int backbufferHeight;
 
     Scene* scene;
     Camera* camera;
