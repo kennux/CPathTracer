@@ -4,7 +4,6 @@
 
 #include "ptmath.h"
 
-
 void p_ray_getPoint(Vec3f* point, Ray* ray, mfloat d)
 {
     point->x = ray->origin.x + (d * ray->direction.x);

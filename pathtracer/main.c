@@ -18,7 +18,7 @@ int main(void) {
     }
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(640, 480, "CPathTracer", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
@@ -98,7 +98,7 @@ int main(void) {
     params.scene = &scene;
     params.samplesPerPixel = 128;
     params.camera = &cam;
-    params.maxBounces = 8;
+    params.maxBounces = 12;
     params.maxDepth = 10000;
 
     trace(params, backbufferData);

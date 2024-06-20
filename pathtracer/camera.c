@@ -39,7 +39,7 @@ Camera camera_Construct(Vec3f lookFrom, Vec3f lookAt, Vec3f vup, float vfov, flo
     return camera;
 }
 
-void camera_GetRay(Ray *outRay, Camera* camera, float u, float v, random_state* rndState)
+void camera_GetRay(Ray *outRay, Camera* camera, float u, float v, RandomState* rndState)
 {
     Vec3f vec;
     random_in_unit_disk(&vec, rndState);

@@ -1,11 +1,9 @@
 //
 // Created by kennu on 18/06/2024.
 //
+#pragma once
 
 #include <math.h>
-
-#ifndef CPATHTRACER_PTMATH_H
-#define CPATHTRACER_PTMATH_H
 
 #define PI 3.14159265359
 
@@ -57,5 +55,3 @@ mfloat v3f_length(Vec3f vec);
 mfloat v3f_lengthSq(Vec3f vec);
 Vec3f v3f_cross(Vec3f v0, Vec3f v1);
 mfloat v3f_dot(Vec3f v0, Vec3f v1);
-
-#endif //CPATHTRACER_PTMATH_H

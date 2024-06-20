@@ -2,10 +2,11 @@
 // Created by kennu on 19/06/2024.
 //
 
-#include "ptmath.h"
+#pragma once
 
-#ifndef CPATHTRACER_MATERIAL_H
-#define CPATHTRACER_MATERIAL_H
+#include "ptmath.h"
+#include "random.h"
+#include "hitinfo.h"
 
 typedef enum MaterialType
 {
@@ -18,4 +19,4 @@ typedef struct Material
     Vec3f albedo;
 } Material;
 
-#endif //CPATHTRACER_MATERIAL_H
+int material_Scatter(HitInfo* hitInfo, Material* material, Vec3f* attenuation, Ray* ray, RandomState* random);

@@ -2,11 +2,11 @@
 // Created by kennu on 19/06/2024.
 //
 
+#pragma once
 #include "ptmath.h"
-#include "material.h"
+#include "hitinfo.h"
 
-#ifndef CPATHTRACER_SCENE_H
-#define CPATHTRACER_SCENE_H
+typedef struct Material Material;
 
 typedef struct Sphere
 {
@@ -30,18 +30,7 @@ typedef struct Scene
     size_t materialCount;
 } Scene;
 
-typedef struct HitInfo
-{
-    Vec3f point;
-    Vec3f normal;
-    float distance;
-
-    Material* material;
-} HitInfo;
-
 /**
  * @return The amount of hits
  */
 int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, mfloat maxDist);
-
-#endif //CPATHTRACER_SCENE_H

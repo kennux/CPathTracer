@@ -3,19 +3,19 @@
 //
 #include "random.h"
 
-void xor_shift_32(random_state* state)
+void xor_shift_32(RandomState* state)
 {
     *state ^= (*state << 13);
     *state ^= (*state >> 17);
     *state ^= (*state << 15);
 }
-mfloat random_01(random_state* state)
+mfloat random_01(RandomState* state)
 {
     xor_shift_32(state);
     return (*state & 0xFFFFFF) / 16777216.0f;
 }
 
-void random_in_unit_disk(Vec3f* out, random_state* state)
+void random_in_unit_disk(Vec3f* out, RandomState* state)
 {
     out->x = (random_01(state) * 2.0f) - 1.0f;
     out->y = (random_01(state) * 2.0f) - 1.0f;
@@ -23,7 +23,7 @@ void random_in_unit_disk(Vec3f* out, random_state* state)
     p_v3f_normalize(out, out);
 }
 
-void random_in_unit_sphere(Vec3f* out, random_state* state)
+void random_in_unit_sphere(Vec3f* out, RandomState* state)
 {
     out->x = (random_01(state) * 2.0f) - 1.0f;
     out->y = (random_01(state) * 2.0f) - 1.0f;
@@ -31,7 +31,7 @@ void random_in_unit_sphere(Vec3f* out, random_state* state)
     p_v3f_normalize(out, out);
 }
 
-void random_unit_vector(Vec3f* out, random_state* state)
+void random_unit_vector(Vec3f* out, RandomState* state)
 {
     mfloat z = random_01(state) * 2.0f - 1.0f;
     mfloat a = random_01(state) * 2.0f * PI;

@@ -2,13 +2,11 @@
 // Created by kennu on 19/06/2024.
 //
 
+#pragma once
 #include "ptmath.h"
 #include "material.h"
 #include "scene.h"
 #include "camera.h"
-
-#ifndef CPATHTRACER_TRACER_H
-#define CPATHTRACER_TRACER_H
 
 typedef struct TraceParameters
 {
@@ -24,5 +22,3 @@ typedef struct TraceParameters
 } TraceParameters;
 
 void trace(TraceParameters params, mfloat* backbuffer);
-
-#endif //CPATHTRACER_TRACER_H
