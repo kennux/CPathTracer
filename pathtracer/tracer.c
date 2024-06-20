@@ -16,13 +16,12 @@ void trace(TraceParameters params, mfloat* backbuffer)
 
     // RGB
     Vec3f color;
-    Vec3f* colors = malloc(sizeof(Vec3f) * params.samplesPerPixel);
 
     for (int x = 0; x < params.backbufferWidth; x++)
     {
         for (int y = 0; y < params.backbufferHeight; y++)
         {
-            color = params.scene->ambientLight;
+            color = vec3f(0,0,0);
             mfloat u = x * invWidth, v = y * invHeight;
             int colorIndex = (y * params.backbufferWidth + x) * 4;
 
@@ -54,21 +53,14 @@ void trace(TraceParameters params, mfloat* backbuffer)
                     bounceCount++;
                 }
 
-                colors[r] = localColor;
+                p_v3f_mul_f(&localColor, &localColor, invSamplesPerPixel);
+                p_v3f_add_v3f(&color, &localColor, &color);
             }
 
-            color = vec3f(0,0,0);
-            for (size_t i = 0; i < params.samplesPerPixel; i++)
-            {
-                p_v3f_add_v3f(&color, &colors[i], &color);
-            }
-            p_v3f_mul_f(&color, &color, invSamplesPerPixel);
             backbuffer[colorIndex + 0] = color.x;
             backbuffer[colorIndex + 1] = color.y;
             backbuffer[colorIndex + 2] = color.z;
             backbuffer[colorIndex + 3] = 1;
         }
     }
-
-    free(colors);
 }

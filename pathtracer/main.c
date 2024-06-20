@@ -1,12 +1,15 @@
 #include "GLFW/glfw3.h"
 #include "camera.h"
 #include "tracer.h"
+#include "bmpwriter.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 // Platform-specific includes and defines
 #ifdef _WIN32
 #include <windows.h>  // For Sleep() on Windows
+#include <time.h>
+
 #else
 #include <unistd.h>   // For usleep() on POSIX
 #endif
@@ -79,7 +82,7 @@ int main(void) {
     Material* materialLambert2 = &scene.materials[1];
     materialLambert2->albedo = vec3f(0.8f, 0.8f, 0.8f);
     materialLambert2->type = MaterialType_Lambert;
-    Material* materialMetal = &scene.materials[3];
+    Material* materialMetal = &scene.materials[2];
     materialMetal->albedo = vec3f(0.75f, 0.75f, 0.75f);
     materialMetal->roughness = 0.025f;
     materialMetal->type = MaterialType_Metal;
@@ -131,7 +134,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &scene;
-    params.samplesPerPixel = 12;
+    params.samplesPerPixel = 2048;
     params.camera = &cam;
     params.maxBounces = 8;
     params.maxDepth = 10000;
@@ -140,19 +143,39 @@ int main(void) {
 
     // Load texture data
     char* textureData = malloc(textureWidth*textureHeight*4);
+    char* bmpData = malloc(textureWidth*textureHeight*3);
     for (int x = 0; x < textureWidth; x++)
     {
         for (int y = 0; y < textureHeight; y++)
         {
             int index = (y * textureWidth + x) * 4;
-            textureData[index + 0] = (char)(backbufferData[index + 0] * 255.0); // R
-            textureData[index + 1] = (char)(backbufferData[index + 1] * 255.0); // G
-            textureData[index + 2] = (char)(backbufferData[index + 2] * 255.0); // B
-            textureData[index + 3] = (char)(backbufferData[index + 3] * 255.0); // A
+            int bmpIndex = (y * textureWidth + x) * 3;
+
+            // Linear -> gamma approximation with sqrt
+            char r = (char)(255.99f * sqrt(backbufferData[index + 0]));
+            char g = (char)(255.99f * sqrt(backbufferData[index + 1]));
+            char b = (char)(255.99f * sqrt(backbufferData[index + 2]));
+            char a = (char)(255.0f * backbufferData[index + 3]);
+
+            textureData[index + 0] = r; // R
+            textureData[index + 1] = g; // G
+            textureData[index + 2] = b; // B
+            textureData[index + 3] = a; // A
+
+            // Bmp format is more special than me
+            // It's actually BGR...
+            bmpData[bmpIndex + 2] = r; // R
+            bmpData[bmpIndex + 1] = g; // G
+            bmpData[bmpIndex + 0] = b; // B
         }
     }
 
     free(backbufferData);
+
+    char tmpPath[512];
+    sprintf(&tmpPath, "%i.bmp", time(NULL));
+    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    free(bmpData);
 
     // Generate a texture
     GLuint texture;
