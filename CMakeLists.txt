@@ -17,5 +17,6 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 target_link_libraries(CPathTracer glfw)
 find_package(OpenGL REQUIRED)
+include_directories( ${OPENGL_INCLUDE_DIRS} )
 target_link_libraries(CPathTracer OpenGL::GL)
 

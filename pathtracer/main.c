@@ -4,13 +4,40 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Platform-specific includes and defines
+#ifdef _WIN32
+#include <windows.h>  // For Sleep() on Windows
+#else
+#include <unistd.h>   // For usleep() on POSIX
+#endif
+
+// Function to sleep for milliseconds
+void sleep_ms(unsigned long milliseconds) {
+#ifdef _WIN32
+    Sleep(milliseconds);  // Sleep for Windows
+#else
+    usleep(milliseconds * 1000);  // usleep() takes microseconds on POSIX
+#endif
+}
+
 // Callback function to handle window resizing
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
+
+void checkOpenGLError() {
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        printf("OpenGL error: %u\n", err);
+    }
+}
+
+static void error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Error: %s\n", description);
 }
 
 int main(void) {
     GLFWwindow* window;
+
+    glfwSetErrorCallback(error_callback);
 
     /* Initialize the library */
     if (!glfwInit()) {
@@ -18,6 +45,9 @@ int main(void) {
     }
 
     /* Create a windowed mode window and its OpenGL context */
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     window = glfwCreateWindow(640, 480, "CPathTracer", NULL, NULL);
     if (!window) {
         glfwTerminate();
@@ -26,15 +56,13 @@ int main(void) {
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
-
-    // Set the framebuffer size callback
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSwapInterval(1);
 
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 1280;
-    int textureHeight = 720;
+    int textureWidth = 640;
+    int textureHeight = 480;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -43,11 +71,18 @@ int main(void) {
     Scene scene;
 
     // Create materials
-    scene.materials = malloc(sizeof(Material) * 1);
-    scene.materialCount = 1;
-    Material* material_lambert = &scene.materials[0];
-    material_lambert->albedo = vec3f(0.8f, 0.4f, 0.4f);
-    material_lambert->type = MaterialType_Lambert;
+    scene.materials = malloc(sizeof(Material) * 3);
+    scene.materialCount = 3;
+    Material* materialLambert1 = &scene.materials[0];
+    materialLambert1->albedo = vec3f(0.8f, 0.4f, 0.4f);
+    materialLambert1->type = MaterialType_Lambert;
+    Material* materialLambert2 = &scene.materials[1];
+    materialLambert2->albedo = vec3f(0.8f, 0.8f, 0.8f);
+    materialLambert2->type = MaterialType_Lambert;
+    Material* materialMetal = &scene.materials[3];
+    materialMetal->albedo = vec3f(0.75f, 0.75f, 0.75f);
+    materialMetal->roughness = 0.025f;
+    materialMetal->type = MaterialType_Metal;
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 8);
@@ -55,38 +90,38 @@ int main(void) {
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert2;
     editSphere = &scene.spheres[1];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(2, 0, -1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert1;
     editSphere = &scene.spheres[2];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0, 0, -1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert1;
     editSphere = &scene.spheres[3];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(-2, 0, -1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialMetal;
     editSphere = &scene.spheres[4];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(2, 0, 1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert1;
     editSphere = &scene.spheres[5];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0, 0, 1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert1;
     editSphere = &scene.spheres[6];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(-2, 0, 1);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert1;
     editSphere = &scene.spheres[7];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0.5f, 1.25f, 0.5f);
-    editSphere->material = material_lambert;
+    editSphere->material = materialLambert1;
     /*editSphere->radius = 100;
     editSphere->center = vec3f(0, -100.5f, -1);
-    editSphere->material_lambert = material_lambert;*/
+    editSphere->materialLambert1 = materialLambert1;*/
 
     // Setup lighting
     scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
@@ -96,9 +131,9 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &scene;
-    params.samplesPerPixel = 128;
+    params.samplesPerPixel = 12;
     params.camera = &cam;
-    params.maxBounces = 12;
+    params.maxBounces = 8;
     params.maxDepth = 10000;
 
     trace(params, backbufferData);
@@ -117,6 +152,8 @@ int main(void) {
         }
     }
 
+    free(backbufferData);
+
     // Generate a texture
     GLuint texture;
     glGenTextures(1, &texture);
@@ -132,15 +169,19 @@ int main(void) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
 
     // Free the texture data if dynamically allocated
-    // free(textureData);
+    free(textureData);
 
+    printf("Tracing done! Entering main loop...\n");
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
-        glClear(GL_COLOR_BUFFER_BIT);
+        int width, height;
 
-        // Render the texture
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glfwGetFramebufferSize(window, &width, &height);
+
+        glViewport(0, 0, width, height);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         glBegin(GL_QUADS);
         glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
@@ -149,19 +190,19 @@ int main(void) {
         glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
         glEnd();
 
-        glDisable(GL_TEXTURE_2D);
-
-        /* Swap front and back buffers */
         glfwSwapBuffers(window);
 
-        /* Poll for and process events */
+        // Believe it or not, this is required to not make the app crash on windows...
+        sleep_ms(10);
         glfwPollEvents();
     }
+    printf("Window was closed!\n");
 
     // Clean up
     glDeleteTextures(1, &texture);
 
     glfwDestroyWindow(window);
     glfwTerminate();
+    printf("Proper termination :)\n");
     return 0;
 }

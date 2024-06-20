@@ -74,6 +74,16 @@ void p_v3f_dot(mfloat* out, Vec3f* v0, Vec3f* v1)
             + (v0->y * v1->y)
             + (v0->z * v1->z);
 }
+void p_v3f_reflect(Vec3f* out, Vec3f* vec, Vec3f* normal)
+{
+    mfloat dot;
+    p_v3f_dot(&dot, vec, normal);
+
+    Vec3f dotXNormal;
+    p_v3f_mul_f(&dotXNormal, normal, dot);
+    p_v3f_mul_f(&dotXNormal, &dotXNormal, 2.0f);
+    p_v3f_sub_v3f(out, vec, &dotXNormal);
+}
 
 Vec3f vec3f(mfloat x, mfloat y, mfloat z)
 {
@@ -143,4 +153,10 @@ mfloat v3f_dot(Vec3f v0, Vec3f v1)
     mfloat ret;
     p_v3f_dot(&ret, &v0, &v1);
     return ret;
+}
+Vec3f v3f_reflect(Vec3f vec, Vec3f normal)
+{
+    Vec3f result;
+    p_v3f_reflect(&result, &vec, &normal);
+    return result;
 }
