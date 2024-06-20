@@ -1,9 +1,4 @@
-//
-// Created by kennu on 19/06/2024.
-//
-
 #include "material.h"
-
 
 int material_Scatter(HitInfo* hitInfo, Material* material, Vec3f* attenuation, Ray* ray, RandomState* random)
 {

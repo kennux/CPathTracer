@@ -1,6 +1,3 @@
-//
-// Created by kennu on 18/06/2024.
-//
 #include "camera.h"
 #include "random.h"
 

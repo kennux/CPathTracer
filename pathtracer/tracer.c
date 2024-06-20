@@ -1,9 +1,4 @@
-//
-// Created by kennu on 19/06/2024.
-//
-
 #include <time.h>
-#include <malloc.h>
 #include "tracer.h"
 
 void trace(TraceParameters params, mfloat* backbuffer, long int* rayCount)

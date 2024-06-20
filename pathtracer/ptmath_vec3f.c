@@ -1,6 +1,3 @@
-//
-// Created by kennu on 18/06/2024.
-//
 #include "ptmath.h"
 
 void p_vec3f(Vec3f* out, mfloat x, mfloat y, mfloat z)

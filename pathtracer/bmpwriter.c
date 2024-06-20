@@ -1,6 +1,3 @@
-//
-// Created by kennu on 20/06/2024.
-//
 #include <stdio.h>
 
 void saveBMP(const char* filename, int width, int height, char* imageData)

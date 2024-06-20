@@ -1,6 +1,3 @@
-//
-// Created by kennu on 18/06/2024.
-//
 #pragma once
 
 #include <math.h>

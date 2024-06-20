@@ -1,7 +1,3 @@
-//
-// Created by kennu on 20/06/2024.
-//
-
 #include "ptmath.h"
 
 void p_ray_getPoint(Vec3f* point, Ray* ray, mfloat d)

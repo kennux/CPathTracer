@@ -1,6 +1,3 @@
-//
-// Created by kennu on 19/06/2024.
-//
 #include "random.h"
 
 void xor_shift_32(RandomState* state)

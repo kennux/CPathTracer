@@ -4,24 +4,7 @@
 #include "bmpwriter.h"
 #include <stdlib.h>
 #include <stdio.h>
-
-// Platform-specific includes and defines
-#ifdef _WIN32
-#include <windows.h>  // For Sleep() on Windows
 #include <time.h>
-
-#else
-#include <unistd.h>   // For usleep() on POSIX
-#endif
-
-// Function to sleep for milliseconds
-void sleep_ms(unsigned long milliseconds) {
-#ifdef _WIN32
-    Sleep(milliseconds);  // Sleep for Windows
-#else
-    usleep(milliseconds * 1000);  // usleep() takes microseconds on POSIX
-#endif
-}
 
 // Callback function to handle window resizing
 
@@ -134,7 +117,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &scene;
-    params.samplesPerPixel = 256;
+    params.samplesPerPixel = 16;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
@@ -182,7 +165,7 @@ int main(void) {
 
     char tmpPath[512];
     sprintf(&tmpPath, "%i.bmp", time(NULL));
-    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    //saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
     // Generate a texture
@@ -223,8 +206,6 @@ int main(void) {
 
         glfwSwapBuffers(window);
 
-        // Believe it or not, this is required to not make the app crash on windows...
-        sleep_ms(10);
         glfwPollEvents();
     }
     printf("Window was closed!\n");

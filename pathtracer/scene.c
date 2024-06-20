@@ -1,7 +1,3 @@
-//
-// Created by kennu on 19/06/2024.
-//
-
 #include <stdbool.h>
 #include "ptmath.h"
 #include "scene.h"
