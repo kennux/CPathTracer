@@ -112,22 +112,29 @@ int main(void) {
     // Setup lighting
     scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
 
+    clock_t start = clock();
+    BakedScene bakedScene;
+    scene_Bake(&scene, &bakedScene);
+    clock_t end = clock();
+    float seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
+    printf("Baking scene took %.6f seconds!\n",  seconds);
+
     // Prepare tracing
     TraceParameters params;
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
-    params.scene = &scene;
+    params.scene = &bakedScene;
     params.samplesPerPixel = 16;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
 
     long int rayCount = 0;
-    clock_t start = clock();
+    start = clock();
     trace(params, backbufferData, &rayCount);
-    clock_t end = clock();
+    end = clock();
 
-    float seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
+    seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
     double megaRays = rayCount / 1000000.0;
     float megaRaysPerSecond = megaRays / seconds;
     printf("%.6f MRays processed in %.6f seconds | %.6f MRays/s!\n\n", megaRays, seconds, megaRaysPerSecond);
@@ -162,6 +169,8 @@ int main(void) {
     }
 
     free(backbufferData);
+    scene_Free(&scene);
+    bakedScene_Free(&bakedScene);
 
     char tmpPath[512];
     sprintf(&tmpPath, "%i.bmp", time(NULL));

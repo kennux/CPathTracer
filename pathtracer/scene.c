@@ -1,21 +1,70 @@
 #include <stdbool.h>
+#include <malloc.h>
+#include <string.h>
 #include "ptmath.h"
 #include "scene.h"
+#include "material.h"
 
-int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
+void sphereSoA_Free(SphereSoA* spheres)
+{
+    free(spheres->material);
+    free(spheres->center);
+    free(spheres->radius);
+    free(spheres->radiusReciprocal);
+    free(spheres->radiusSq);
+}
+
+void bakedScene_Free(BakedScene* scene)
+{
+    sphereSoA_Free(&scene->spheres);
+    free(scene->materials);
+}
+
+void scene_Free(Scene* scene)
+{
+    free(scene->materials);
+    free(scene->spheres);
+}
+
+void scene_Bake(Scene* scene, BakedScene* baked)
+{
+    // Bake spheres to SoA
+    baked->spheres.radiusSq = malloc(sizeof(mfloat) * scene->sphereCount);
+    baked->spheres.radiusReciprocal = malloc(sizeof(mfloat) * scene->sphereCount);
+    baked->spheres.radius = malloc(sizeof(mfloat) * scene->sphereCount);
+    baked->spheres.center = malloc(sizeof(Vec3f) * scene->sphereCount);
+    baked->spheres.material = malloc(sizeof(Material*) * scene->materialCount);
+    baked->spheres.sphereCount = scene->sphereCount;
+
+    for (size_t i = 0; i < scene->sphereCount; i++)
+    {
+        baked->spheres.radius[i] = scene->spheres[i].radius;
+        baked->spheres.radiusSq[i] = scene->spheres[i].radius * scene->spheres[i].radius;
+        baked->spheres.radiusReciprocal[i] = 1.0f / scene->spheres[i].radius;
+        baked->spheres.center[i] = scene->spheres[i].center;
+        baked->spheres.material[i] = scene->spheres[i].material;
+    }
+
+    // Copy materials
+    baked->materials = malloc(sizeof(Material) * scene->materialCount);
+    memcpy(baked->materials, scene->materials, sizeof(Material) * scene->materialCount);
+
+    baked->materialCount = scene->materialCount;
+    baked->ambientLight = scene->ambientLight;
+}
+
+int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
 {
     int hitCount = 0;
-    HitInfo hitInfo;
     HitInfo localHitInfo;
 
     // Spheres
-    for (size_t i = 0; i < scene->sphereCount; i++)
+    SphereSoA spheres = scene->spheres;
+    for (size_t i = 0; i < spheres.sphereCount; i++)
     {
-        Sphere* sphere = &scene->spheres[i];
-
         Vec3f oc;
         // origin - center
-        p_v3f_sub_v3f(&oc, &ray->origin, &sphere->center);
+        p_v3f_sub_v3f(&oc, &ray->origin, &spheres.center[i]);
 
         // oc.direction
         mfloat b;
@@ -30,7 +79,7 @@ int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, m
         mfloat c;
         p_v3f_lengthSq(&c, &oc);
 
-        mfloat discriminantSqr = b * b - (c - (sphere->radius * sphere->radius));
+        mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
         if (discriminantSqr > 0)
         {
             mfloat discriminant = sqrt(discriminantSqr);
@@ -41,11 +90,11 @@ int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, m
                 p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
 
                 // Calculate normal
-                p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &sphere->center);
-                p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, 1.0f / sphere->radius);
+                p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
+                p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
 
                 // Set material
-                localHitInfo.material = sphere->material;
+                localHitInfo.material = spheres.material[i];
 
                 hasHit = true;
             }
@@ -58,11 +107,11 @@ int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, m
                     p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
 
                     // Calculate normal
-                    p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &sphere->center);
-                    p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, 1.0f / sphere->radius);
+                    p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
+                    p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
 
                     // Set material
-                    localHitInfo.material = sphere->material;
+                    localHitInfo.material = spheres.material[i];
 
                     hasHit = true;
                 }
@@ -72,17 +121,16 @@ int scene_Raycast(HitInfo* outHitInfo, Scene* scene, Ray* ray, mfloat minDist, m
         if (hasHit)
         {
             if (hitCount == 0)
-                hitInfo = localHitInfo;
+                *outHitInfo = localHitInfo;
             else
             {
-                if (hitInfo.distance > localHitInfo.distance)
-                    hitInfo = localHitInfo; // Better hit - exchange!
+                if (outHitInfo->distance > localHitInfo.distance)
+                    *outHitInfo = localHitInfo; // Better hit - exchange!
             }
 
             hitCount++;
         }
     }
 
-    *outHitInfo = hitInfo;
     return hitCount;
 }

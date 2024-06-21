@@ -9,7 +9,7 @@ typedef struct TraceParameters
     int backbufferWidth;
     int backbufferHeight;
 
-    Scene* scene;
+    BakedScene* scene;
     Camera* camera;
 
     int samplesPerPixel;
