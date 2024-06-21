@@ -37,7 +37,7 @@ void trace(TraceParameters params, mfloat* backbuffer, long int* rayCount)
                     if (hits > 0)
                     {
                         Vec3f attenuation;
-                        int scatter = material_Scatter(&hitInfo, hitInfo.material, &attenuation, &ray, &rand);
+                        int scatter = material_Scatter(&hitInfo, &params.scene->materials, hitInfo.matIdx, &attenuation, &ray, &rand);
                         p_v3f_mul_v3f(&localColor, &attenuation, &localColor);
 
                         if (scatter == 0)

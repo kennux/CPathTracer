@@ -1,8 +1,7 @@
 #pragma once
 #include "ptmath.h"
 #include "hitinfo.h"
-
-typedef struct Material Material;
+#include "material.h"
 
 typedef struct Sphere
 {
@@ -19,7 +18,7 @@ typedef struct SphereSoA
     mfloat* radiusSq;
     mfloat* radiusReciprocal;
 
-    Material** material;
+    size_t* matIdx;
 
     size_t sphereCount;
 } SphereSoA;
@@ -47,8 +46,7 @@ typedef struct BakedScene
     Vec3f ambientLight;
 
     // Material data
-    Material* materials;
-    size_t materialCount;
+    MaterialSoA materials;
 } BakedScene;
 
 void scene_Free(Scene* scene);

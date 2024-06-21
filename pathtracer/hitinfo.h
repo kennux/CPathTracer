@@ -8,5 +8,5 @@ typedef struct HitInfo
     Vec3f normal;
     float distance;
 
-    Material *material;
+    size_t matIdx;
 } HitInfo;

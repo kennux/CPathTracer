@@ -1,8 +1,33 @@
+#include <malloc.h>
 #include "material.h"
 
-int material_Scatter(HitInfo* hitInfo, Material* material, Vec3f* attenuation, Ray* ray, RandomState* random)
+void materialSoA_Free(MaterialSoA* materials)
 {
-    switch (material->type)
+    free(materials->roughness);
+    free(materials->albedo);
+    free(materials->type);
+}
+
+MaterialSoA material_ToSoA(Material* materials, size_t count)
+{
+    MaterialSoA mats;
+    mats.type = malloc(sizeof(MaterialType) * count);
+    mats.albedo = malloc(sizeof(Vec3f) * count);
+    mats.roughness = malloc(sizeof(mfloat) * count);
+    mats.materialCount = count;
+
+    for (size_t i = 0; i < count; i++)
+    {
+        mats.type[i] = materials[i].type;
+        mats.albedo[i] = materials[i].albedo;
+        mats.roughness[i] = materials[i].roughness;
+    }
+    return mats;
+}
+
+int material_Scatter(HitInfo* hitInfo, MaterialSoA* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random)
+{
+    switch (materials->type[matIndex])
     {
         case MaterialType_Lambert: {
             Vec3f target, randomUnitV;
@@ -16,7 +41,7 @@ int material_Scatter(HitInfo* hitInfo, Material* material, Vec3f* attenuation, R
             p_v3f_sub_v3f(&ray->direction, &target, &hitInfo->point);
             p_v3f_normalize(&ray->direction, &ray->direction);
 
-            *attenuation = material->albedo;
+            *attenuation = materials->albedo[matIndex];
             return 1;
         }
         case MaterialType_Metal: {
@@ -26,11 +51,11 @@ int material_Scatter(HitInfo* hitInfo, Material* material, Vec3f* attenuation, R
 
             Vec3f randomVec;
             random_in_unit_sphere(&randomVec, random);
-            p_v3f_mul_f(&randomVec, &randomVec, material->roughness);
+            p_v3f_mul_f(&randomVec, &randomVec, materials->roughness[matIndex]);
             p_v3f_add_v3f(&ray->direction, &reflected, &randomVec);
             p_v3f_normalize(&ray->direction, &ray->direction);
 
-            *attenuation = material->albedo;
+            *attenuation = materials->albedo[matIndex];
 
             mfloat dot;
             p_v3f_dot(&dot, &ray->direction, &hitInfo->normal);

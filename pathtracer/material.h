@@ -19,4 +19,20 @@ typedef struct Material
     mfloat roughness;
 } Material;
 
-int material_Scatter(HitInfo* hitInfo, Material* material, Vec3f* attenuation, Ray* ray, RandomState* random);
+typedef struct MaterialSoA
+{
+    MaterialType* type;
+
+    // Generic
+    Vec3f* albedo;
+
+    // Metal
+    mfloat* roughness;
+
+    size_t materialCount;
+} MaterialSoA;
+
+int material_Scatter(HitInfo* hitInfo, MaterialSoA* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random);
+
+MaterialSoA material_ToSoA(Material* materials, size_t count);
+void materialSoA_Free(MaterialSoA* materials);
