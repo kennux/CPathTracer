@@ -19,7 +19,7 @@ typedef struct Material
     mfloat roughness;
 } Material;
 
-typedef struct MaterialSoA
+typedef struct BakedMaterials
 {
     MaterialType* type;
 
@@ -30,9 +30,9 @@ typedef struct MaterialSoA
     mfloat* roughness;
 
     size_t materialCount;
-} MaterialSoA;
+} BakedMaterials;
 
-int material_Scatter(HitInfo* hitInfo, MaterialSoA* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random);
+int material_Scatter(HitInfo* hitInfo, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random);
 
-MaterialSoA material_ToSoA(Material* materials, size_t count);
-void materialSoA_Free(MaterialSoA* materials);
+BakedMaterials material_Bake(Material* materials, size_t count);
+void bakedMaterials_Free(BakedMaterials* materials);

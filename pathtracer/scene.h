@@ -11,7 +11,7 @@ typedef struct Sphere
     Material* material;
 } Sphere;
 
-typedef struct SphereSoA
+typedef struct BakedSpheres
 {
     Vec3f* center;
     mfloat* radius;
@@ -21,7 +21,7 @@ typedef struct SphereSoA
     size_t* matIdx;
 
     size_t sphereCount;
-} SphereSoA;
+} BakedSpheres;
 
 typedef struct Scene
 {
@@ -40,17 +40,17 @@ typedef struct Scene
 typedef struct BakedScene
 {
     // Scene data
-    SphereSoA spheres;
+    BakedSpheres spheres;
 
     // Lighting data
     Vec3f ambientLight;
 
     // Material data
-    MaterialSoA materials;
+    BakedMaterials materials;
 } BakedScene;
 
 void scene_Free(Scene* scene);
-void sphereSoA_Free(SphereSoA* spheres);
+void bakedSpheres_Free(BakedSpheres* spheres);
 void bakedScene_Free(BakedScene* scene);
 
 void scene_Bake(Scene* scene, BakedScene* baked);

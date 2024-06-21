@@ -5,7 +5,7 @@
 #include "scene.h"
 #include "material.h"
 
-void sphereSoA_Free(SphereSoA* spheres)
+void bakedSpheres_Free(BakedSpheres* spheres)
 {
     free(spheres->matIdx);
     free(spheres->center);
@@ -16,8 +16,8 @@ void sphereSoA_Free(SphereSoA* spheres)
 
 void bakedScene_Free(BakedScene* scene)
 {
-    sphereSoA_Free(&scene->spheres);
-    materialSoA_Free(&scene->materials);
+    bakedSpheres_Free(&scene->spheres);
+    bakedMaterials_Free(&scene->materials);
 }
 
 void scene_Free(Scene* scene)
@@ -53,7 +53,7 @@ void scene_Bake(Scene* scene, BakedScene* baked)
     }
 
     // Prep mats
-    baked->materials = material_ToSoA(scene->materials, scene->materialCount);
+    baked->materials = material_Bake(scene->materials, scene->materialCount);
     baked->ambientLight = scene->ambientLight;
 }
 
@@ -63,7 +63,7 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     HitInfo localHitInfo;
 
     // Spheres
-    SphereSoA spheres = scene->spheres;
+    BakedSpheres spheres = scene->spheres;
     for (size_t i = 0; i < spheres.sphereCount; i++)
     {
         Vec3f oc;

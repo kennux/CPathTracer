@@ -1,16 +1,16 @@
 #include <malloc.h>
 #include "material.h"
 
-void materialSoA_Free(MaterialSoA* materials)
+void bakedMaterials_Free(BakedMaterials* materials)
 {
     free(materials->roughness);
     free(materials->albedo);
     free(materials->type);
 }
 
-MaterialSoA material_ToSoA(Material* materials, size_t count)
+BakedMaterials material_Bake(Material* materials, size_t count)
 {
-    MaterialSoA mats;
+    BakedMaterials mats;
     mats.type = malloc(sizeof(MaterialType) * count);
     mats.albedo = malloc(sizeof(Vec3f) * count);
     mats.roughness = malloc(sizeof(mfloat) * count);
@@ -25,7 +25,7 @@ MaterialSoA material_ToSoA(Material* materials, size_t count)
     return mats;
 }
 
-int material_Scatter(HitInfo* hitInfo, MaterialSoA* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random)
+int material_Scatter(HitInfo* hitInfo, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random)
 {
     switch (materials->type[matIndex])
     {
