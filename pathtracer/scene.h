@@ -18,6 +18,9 @@ typedef struct BakedSpheres
     mfloat* radiusSq;
     mfloat* radiusReciprocal;
 
+    Vec3f* boxMin;
+    Vec3f* boxMax;
+
     size_t* matIdx;
 
     size_t sphereCount;
