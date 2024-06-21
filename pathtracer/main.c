@@ -124,7 +124,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 1024;
+    params.samplesPerPixel = 16;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
@@ -138,7 +138,6 @@ int main(void) {
     double megaRays = rayCount / 1000000.0;
     float megaRaysPerSecond = megaRays / seconds;
     printf("%.6f MRays processed in %.6f seconds | %.6f MRays/s!\n\n", megaRays, seconds, megaRaysPerSecond);
-    exit(1);
 
     // Load texture data
     char* textureData = malloc(textureWidth*textureHeight*4);

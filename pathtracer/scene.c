@@ -40,6 +40,8 @@ void scene_Bake(Scene* scene, BakedScene* baked)
     baked->spheres.matIdx = malloc(sizeof(size_t) * scene->sphereCount);
     baked->spheres.sphereCount = scene->sphereCount;
 
+    baked->sceneBoundsMin = vec3f(MFLOAT_MAX, MFLOAT_MAX, MFLOAT_MAX);
+    baked->sceneBoundsMax = vec3f(MFLOAT_MIN, MFLOAT_MIN, MFLOAT_MIN);
     for (size_t i = 0; i < scene->sphereCount; i++)
     {
         baked->spheres.radius[i] = scene->spheres[i].radius;
@@ -56,6 +58,9 @@ void scene_Bake(Scene* scene, BakedScene* baked)
                 matIdx = j;
         }
         baked->spheres.matIdx[i] = matIdx;
+
+        p_v3f_min(&baked->sceneBoundsMin, &baked->sceneBoundsMin, &baked->spheres.boxMin[i]);
+        p_v3f_max(&baked->sceneBoundsMax, &baked->sceneBoundsMax, &baked->spheres.boxMax[i]);
     }
 
     // Prep mats
@@ -68,52 +73,66 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     int hitCount = 0;
     HitInfo localHitInfo;
 
+    /* SCENE BOUNDS CHECK:
     Vec3f invRayDir;
     invRayDir.x = 1.0f / ray->direction.x;
     invRayDir.y = 1.0f / ray->direction.y;
     invRayDir.z = 1.0f / ray->direction.z;
 
+    Vec3f tMin, tMax;
+    p_v3f_sub_v3f(&tMin, &scene->sceneBoundsMin, &ray->origin);
+    p_v3f_mul_v3f(&tMin, &tMin, &invRayDir);
+    p_v3f_sub_v3f(&tMax, &scene->sceneBoundsMax, &ray->origin);
+    p_v3f_mul_v3f(&tMax, &tMax, &invRayDir);
+
+    if (invRayDir.x < 0.0f) { float temp = tMin.x; tMin.x = tMax.x; tMax.x = temp; }
+    if (invRayDir.y < 0.0f) { float temp = tMin.y; tMin.y = tMax.y; tMax.y = temp; }
+    if (invRayDir.z < 0.0f) { float temp = tMin.z; tMin.z = tMax.z; tMax.z = temp; }
+
+    float t0 = fmaxf(fmaxf(tMin.x, tMin.y), tMin.z);
+    float t1 = fminf(fminf(tMax.x, tMax.y), tMax.z);
+    if (t0 > t1 || t1 < 0.0f)
+        return 0; // Outside of scene bounds
+    */
+
     // Spheres
     BakedSpheres spheres = scene->spheres;
     for (size_t i = 0; i < spheres.sphereCount; i++)
     {
-        /*Vec3f tMin, tMax;
-        p_v3f_sub_v3f(&tMin, &scene->spheres.boxMin[i], &ray->origin);
-        p_v3f_mul_v3f(&tMin, &tMin, &invRayDir);
-        p_v3f_sub_v3f(&tMax, &scene->spheres.boxMax[i], &ray->origin);
-        p_v3f_mul_v3f(&tMax, &tMax, &invRayDir);
+        Vec3f oc;
+        // origin - center
+        p_v3f_sub_v3f(&oc, &ray->origin, &spheres.center[i]);
 
-        if (invRayDir.x < 0.0f) { float temp = tMin.x; tMin.x = tMax.x; tMax.x = temp; }
-        if (invRayDir.y < 0.0f) { float temp = tMin.y; tMin.y = tMax.y; tMax.y = temp; }
-        if (invRayDir.z < 0.0f) { float temp = tMin.z; tMin.z = tMax.z; tMax.z = temp; }
+        // oc.direction
+        mfloat b;
+        p_v3f_dot(&b, &oc, &ray->direction);
 
-        float t0 = fmaxf(fmaxf(tMin.x, tMin.y), tMin.z);
-        float t1 = fminf(fminf(tMax.x, tMax.y), tMax.z);*/
+        if (b > 0)
+            continue;
+
+        // length sq of oc
+        mfloat c;
+        p_v3f_lengthSq(&c, &oc);
 
         bool hasHit = false;
+        mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
+        if (discriminantSqr > 0) {
+            mfloat discriminant = sqrt(discriminantSqr);
+            localHitInfo.distance = (-b - discriminant);
+            if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
+                // Calculate hit point
+                p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
 
-        // Box was hit
-        //if (t0 <= t1 && t1 >= 0.0f)
-        {
-            Vec3f oc;
-            // origin - center
-            p_v3f_sub_v3f(&oc, &ray->origin, &spheres.center[i]);
+                // Calculate normal
+                p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
+                p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
 
-            // oc.direction
-            mfloat b;
-            p_v3f_dot(&b, &oc, &ray->direction);
+                // Set material
+                localHitInfo.matIdx = spheres.matIdx[i];
 
-            if (b > 0)
-                continue;
-
-            // length sq of oc
-            mfloat c;
-            p_v3f_lengthSq(&c, &oc);
-
-            mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
-            if (discriminantSqr > 0) {
-                mfloat discriminant = sqrt(discriminantSqr);
-                localHitInfo.distance = (-b - discriminant);
+                hasHit = true;
+            } else {
+                localHitInfo.distance = (-b + discriminant);
                 if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
                     // Calculate hit point
                     p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
@@ -126,21 +145,6 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
                     localHitInfo.matIdx = spheres.matIdx[i];
 
                     hasHit = true;
-                } else {
-                    localHitInfo.distance = (-b + discriminant);
-                    if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
-                        // Calculate hit point
-                        p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
-
-                        // Calculate normal
-                        p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
-                        p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
-
-                        // Set material
-                        localHitInfo.matIdx = spheres.matIdx[i];
-
-                        hasHit = true;
-                    }
                 }
             }
         }

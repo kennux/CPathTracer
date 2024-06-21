@@ -81,6 +81,18 @@ void p_v3f_reflect(Vec3f* out, Vec3f* vec, Vec3f* normal)
     p_v3f_mul_f(&dotXNormal, &dotXNormal, 2.0f);
     p_v3f_sub_v3f(out, vec, &dotXNormal);
 }
+void p_v3f_min(Vec3f *out, Vec3f* v0, Vec3f* v1)
+{
+    out->x = fminf(v0->x, v1->x);
+    out->y = fminf(v0->y, v1->y);
+    out->z = fminf(v0->z, v1->z);
+}
+void p_v3f_max(Vec3f *out, Vec3f* v0, Vec3f* v1)
+{
+    out->x = fmaxf(v0->x, v1->x);
+    out->y = fmaxf(v0->y, v1->y);
+    out->z = fmaxf(v0->z, v1->z);
+}
 
 Vec3f vec3f(mfloat x, mfloat y, mfloat z)
 {
@@ -156,4 +168,18 @@ Vec3f v3f_reflect(Vec3f vec, Vec3f normal)
     Vec3f result;
     p_v3f_reflect(&result, &vec, &normal);
     return result;
+}
+
+Vec3f v3f_min(Vec3f v0, Vec3f v1)
+{
+    Vec3f v;
+    p_v3f_min(&v, &v0, &v1);
+    return v;
+}
+
+Vec3f v3f_max(Vec3f v0, Vec3f v1)
+{
+    Vec3f v;
+    p_v3f_max(&v, &v0, &v1);
+    return v;
 }
