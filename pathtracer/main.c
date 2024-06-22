@@ -124,14 +124,21 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 16;
+    params.samplesPerPixel = 512;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
 
+    TraceTileParameters fullTileParams = singleTileTraceParams(params);
+
+    size_t parallelTileCount = parallelTileTraceParams_TileCount(params, 16, 16);
+    TraceTileParameters* parallelTileParams = malloc(sizeof(TraceTileParameters) * parallelTileCount);
+    parallelTileTraceParams(params, 16, 16, parallelTileParams);
+
     long int rayCount = 0;
     start = clock();
-    trace(params, backbufferData, &rayCount);
+    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32);
+    //traceTile(fullTileParams, backbufferData, &rayCount);
     end = clock();
 
     seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
@@ -169,6 +176,7 @@ int main(void) {
     }
 
     free(backbufferData);
+    free(parallelTileParams);
     scene_Free(&scene);
     bakedScene_Free(&bakedScene);
 

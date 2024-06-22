@@ -17,4 +17,19 @@ typedef struct TraceParameters
     int maxBounces;
 } TraceParameters;
 
-void trace(TraceParameters params, mfloat* backbuffer, long int* rayCount);
+typedef struct TraceTileParameters
+{
+    int xStart;
+    int yStart;
+    int regionWidth;
+    int regionHeight;
+
+    TraceParameters traceParams;
+} TraceTileParameters;
+
+TraceTileParameters singleTileTraceParams(TraceParameters params);
+void parallelTileTraceParams(TraceParameters params, int tileSizeX, int tileSizeY, TraceTileParameters* outTileParams);
+size_t parallelTileTraceParams_TileCount(TraceParameters params, int tileSizeX, int tileSizeY);
+
+void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, long int* rayCount, int threadCount);
+void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, long int* rayCount);
