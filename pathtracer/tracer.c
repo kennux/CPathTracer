@@ -65,7 +65,7 @@ typedef struct local_traceWorkerParams
     size_t tileCount;
     mfloat* backbuffer;
 
-    long int* rayCount;
+    uint64_t* rayCount;
     LONG* jobPtr;
 } local_traceWorkerParams;
 
@@ -82,10 +82,10 @@ DWORD WINAPI local_traceWorker(LPVOID arg)
     return 0;
 }
 
-void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, long int* rayCount, int threadCount)
+void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount)
 {
     HANDLE* threads = malloc(threadCount * sizeof(HANDLE));
-    long int* rayCounts = malloc(threadCount * sizeof(long int));
+    uint64_t* rayCounts = malloc(threadCount * sizeof(uint64_t));
     local_traceWorkerParams* params = malloc(threadCount * sizeof(local_traceWorkerParams));
     LONG jobPtr = -1;
 
@@ -115,7 +115,7 @@ void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuf
     free(params);
 }
 
-void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, long int* rayCount)
+void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount)
 {
     TraceParameters  params = tileParams.traceParams;
     RandomState rand = time(NULL);

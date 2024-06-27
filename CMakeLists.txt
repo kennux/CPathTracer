@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
-project(CPathTracer C)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+project(CPathTracer LANGUAGES C)
 
 set(CMAKE_C_STANDARD 23)
 
@@ -19,11 +20,3 @@ target_link_libraries(CPathTracer glfw)
 find_package(OpenGL REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS} )
 target_link_libraries(CPathTracer OpenGL::GL)
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
-endif()

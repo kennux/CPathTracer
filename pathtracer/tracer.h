@@ -3,6 +3,7 @@
 #include "material.h"
 #include "scene.h"
 #include "camera.h"
+#include <stdint.h>
 
 typedef struct TraceParameters
 {
@@ -31,5 +32,5 @@ TraceTileParameters singleTileTraceParams(TraceParameters params);
 void parallelTileTraceParams(TraceParameters params, int tileSizeX, int tileSizeY, TraceTileParameters* outTileParams);
 size_t parallelTileTraceParams_TileCount(TraceParameters params, int tileSizeX, int tileSizeY);
 
-void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, long int* rayCount, int threadCount);
-void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, long int* rayCount);
+void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount);
+void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount);

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdint.h>
 
 // Callback function to handle window resizing
 
@@ -71,8 +72,8 @@ int main(void) {
     materialMetal->type = MaterialType_Metal;
 
     // Create spheres
-    scene.spheres = malloc(sizeof(Sphere) * 8);
-    scene.sphereCount = 8;
+    scene.spheres = malloc(sizeof(Sphere) * 58);
+    scene.sphereCount = 58;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -105,6 +106,19 @@ int main(void) {
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0.5f, 1.25f, 0.5f);
     editSphere->material = materialLambert1;
+
+    for (size_t i = 0; i < 50; i++)
+    {
+        int row = i % 10;
+        int col = floor((mfloat)i / 10.0f);
+        mfloat x = -4.0f + (row);
+        mfloat z = -2.0f - (col);
+
+        editSphere = &scene.spheres[i+8];
+        editSphere->radius = 0.5f;
+        editSphere->center = vec3f(x, 0, z);
+        editSphere->material = i % 2 == 0 ? materialLambert1 : materialMetal;
+    }
     /*editSphere->radius = 100;
     editSphere->center = vec3f(0, -100.5f, -1);
     editSphere->materialLambert1 = materialLambert1;*/
@@ -124,7 +138,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 512;
+    params.samplesPerPixel = 8;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
@@ -135,10 +149,10 @@ int main(void) {
     TraceTileParameters* parallelTileParams = malloc(sizeof(TraceTileParameters) * parallelTileCount);
     parallelTileTraceParams(params, 16, 16, parallelTileParams);
 
-    long int rayCount = 0;
+    uint64_t rayCount = 0;
     start = clock();
-    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32);
-    //traceTile(fullTileParams, backbufferData, &rayCount);
+    //traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32);
+    traceTile(fullTileParams, backbufferData, &rayCount);
     end = clock();
 
     seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
@@ -181,7 +195,7 @@ int main(void) {
     bakedScene_Free(&bakedScene);
 
     char tmpPath[512];
-    sprintf(&tmpPath, "%i.bmp", time(NULL));
+    sprintf((void*)&tmpPath, "%i.bmp", time(NULL));
     //saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
@@ -225,13 +239,11 @@ int main(void) {
 
         glfwPollEvents();
     }
-    printf("Window was closed!\n");
 
     // Clean up
     glDeleteTextures(1, &texture);
 
     glfwDestroyWindow(window);
     glfwTerminate();
-    printf("Proper termination :)\n");
     return 0;
 }
