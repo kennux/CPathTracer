@@ -40,11 +40,11 @@ void scene_Bake(Scene* scene, BakedScene* baked)
     baked->spheres.boxMin = malloc(sizeof(Vec3f) * scene->sphereCount);
     baked->spheres.matIdx = malloc(sizeof(size_t) * scene->sphereCount);
     baked->spheres.sphereCount = scene->sphereCount;
-    baked->spheres.oSphereIterationCount = scene->sphereCount / 4;
-    if (baked->spheres.sphereCount % 4 != 0)
+    baked->spheres.oSphereIterationCount = scene->sphereCount / SIMD_MATH_WIDTH;
+    if (baked->spheres.sphereCount % SIMD_MATH_WIDTH != 0)
         baked->spheres.oSphereIterationCount++;
 
-    baked->spheres.oCenter = malloc(sizeof(Vec3f_Pack4) * baked->spheres.oSphereIterationCount);
+    baked->spheres.oCenter = malloc(sizeof(Vec3f_Pack) * baked->spheres.oSphereIterationCount);
 
     baked->sceneBoundsMin = vec3f(MFLOAT_MAX, MFLOAT_MAX, MFLOAT_MAX);
     baked->sceneBoundsMax = vec3f(MFLOAT_MIN, MFLOAT_MIN, MFLOAT_MIN);
@@ -72,7 +72,7 @@ void scene_Bake(Scene* scene, BakedScene* baked)
     // Clear prepass
     for (size_t i = 0; i < baked->spheres.oSphereIterationCount; i++)
     {
-        for (size_t j = 0; j < 4; j++)
+        for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
             baked->spheres.oCenter[i].x[j] = 0;
             baked->spheres.oCenter[i].y[j] = 0;
@@ -83,7 +83,7 @@ void scene_Bake(Scene* scene, BakedScene* baked)
     size_t oSphereIdx = 0;
     for (size_t i = 0; i < baked->spheres.oSphereIterationCount; i++)
     {
-        for (size_t j = 0; j < 4; j++)
+        for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
             size_t mIdx = oSphereIdx + j;
 
@@ -94,7 +94,7 @@ void scene_Bake(Scene* scene, BakedScene* baked)
             }
         }
 
-        oSphereIdx += 4;
+        oSphereIdx += SIMD_MATH_WIDTH;
     }
 
     // Prep mats
@@ -130,15 +130,15 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     */
 
     // Pack ray
-    Vec3f_Pack4 packRayOrigin;
-    Vec3f_Pack4 packRayDir;
-    sp_4vec_pack_single(&packRayOrigin, &ray->origin);
-    sp_4vec_pack_single(&packRayDir, &ray->direction);
+    Vec3f_Pack packRayOrigin;
+    Vec3f_Pack packRayDir;
+    sp_packVec_pack_single(&packRayOrigin, &ray->origin);
+    sp_packVec_pack_single(&packRayDir, &ray->direction);
 
     // Prep packs
-    Vec3f_Pack4 packOc;
-    mfloat packB[4];
-    mfloat packC[4];
+    Vec3f_Pack packOc;
+    mfloat packB[SIMD_MATH_WIDTH];
+    mfloat packC[SIMD_MATH_WIDTH];
     Vec3f oc;
     mfloat b;
 
@@ -147,18 +147,18 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     for (size_t packIdx = 0; packIdx < spheres.oSphereIterationCount; packIdx++)
     {
         // origin-center
-        sp_4vec_sub(&packOc, &packRayOrigin, &spheres.oCenter[packIdx]);
+        sp_packVec_sub(&packOc, &packRayOrigin, &spheres.oCenter[packIdx]);
 
         // oc.direction
         // p_v3f_dot(&b, &oc, &ray->direction);
-        sp_4vec_dot(&packB, &packOc, &packRayDir);
+        sp_packVec_dot(&packB, &packOc, &packRayDir);
 
         // p_v3f_lengthSq(&c, &oc);
-        sp_4vec_lengthSq(&packC, &packOc);
+        sp_packVec_lengthSq(&packC, &packOc);
 
-        size_t itStart = packIdx * 4;
-        size_t itEnd = min(itStart+4, spheres.sphereCount);
-        for (size_t instIdx = 0; instIdx < 4; instIdx++)
+        size_t itStart = packIdx * SIMD_MATH_WIDTH;
+        size_t itEnd = min(itStart+SIMD_MATH_WIDTH, spheres.sphereCount);
+        for (size_t instIdx = 0; instIdx < SIMD_MATH_WIDTH; instIdx++)
         {
             size_t i = itStart + instIdx;
             if (i >= itEnd)

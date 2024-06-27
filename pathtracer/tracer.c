@@ -82,7 +82,7 @@ DWORD WINAPI local_traceWorker(LPVOID arg)
     return 0;
 }
 
-void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount)
+void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount, progressCallbackFunc progressCallback)
 {
     HANDLE* threads = malloc(threadCount * sizeof(HANDLE));
     uint64_t* rayCounts = malloc(threadCount * sizeof(uint64_t));
@@ -102,7 +102,14 @@ void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuf
         rayCounts[i] = 0;
     }
 
-    WaitForMultipleObjects(threadCount, threads, TRUE, INFINITE);
+    while (true)
+    {
+        DWORD waitResult = WaitForMultipleObjects(threadCount, threads, TRUE, 1000);
+        if (waitResult >= WAIT_OBJECT_0 && waitResult < WAIT_OBJECT_0 + threadCount)
+            break; // Exit the loop when all threads have finished
+
+        progressCallback((float)jobPtr / tileCount);
+    }
 
     *rayCount = 0;
     for (int i = 0; i < threadCount; ++i) {

@@ -22,7 +22,7 @@ typedef struct BakedSpheres
     Vec3f* boxMax;
 
     // Optimized memory access copies
-    Vec3f_Pack4* oCenter;
+    Vec3f_Pack* oCenter;
 
     size_t* matIdx;
 

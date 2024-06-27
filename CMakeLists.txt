@@ -20,3 +20,8 @@ target_link_libraries(CPathTracer glfw)
 find_package(OpenGL REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS} )
 target_link_libraries(CPathTracer OpenGL::GL)
+
+include(CMakePrintHelpers)
+if (CMAKE_C_COMPILER MATCHES "clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+endif ()

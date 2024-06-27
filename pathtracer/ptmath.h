@@ -7,6 +7,24 @@
 #define MFLOAT_MIN FLT_MIN
 #define MFLOAT_MAX FLT_MAX
 
+#define EXPLICIT_SIMD
+
+#ifdef EXPLICIT_SIMD
+    #ifdef __AVX__
+    #define SIMD_MATH_WIDTH 8
+    #define SIMD 1
+    #elifdef __SSE__
+    #define SIMD_MATH_WIDTH 4
+    #define SIMD 1
+    #else
+    #define SIMD_MATH_WIDTH 8
+    #define SIMD 0
+    #endif
+#else
+    #define SIMD_MATH_WIDTH 8
+    #define SIMD 0
+#endif
+
 typedef float mfloat;
 
 typedef struct Vec3f
@@ -22,12 +40,16 @@ typedef struct Ray
     Vec3f direction;
 } Ray;
 
-typedef struct Vec3f_Pack4
+#if SIMD_MATH_WIDTH == 8
+__declspec(align(32)) typedef struct Vec3f_Pack
+#elif SIMD_MATH_WIDTH == 4
+__declspec(align(16)) typedef struct Vec3f_Pack
+#endif
 {
-    mfloat x[4];
-    mfloat y[4];
-    mfloat z[4];
-} Vec3f_Pack4;
+    mfloat x[SIMD_MATH_WIDTH];
+    mfloat y[SIMD_MATH_WIDTH];
+    mfloat z[SIMD_MATH_WIDTH];
+} Vec3f_Pack;
 
 // Ray
 void p_ray_getPoint(Vec3f* point, Ray* ray, mfloat d);
@@ -62,11 +84,11 @@ Vec3f v3f_reflect(Vec3f vec, Vec3f normal);
 Vec3f v3f_min(Vec3f v0, Vec3f v1);
 Vec3f v3f_max(Vec3f v0, Vec3f v1);
 
-void sp_4vec_pack_single(Vec3f_Pack4* out, Vec3f* vec);
-void sp_4vec_extract(Vec3f_Pack4* pack, Vec3f* out, size_t idx);
-void sp_4vec_sub(Vec3f_Pack4* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
-void sp_4vec_add(Vec3f_Pack4* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
-void sp_4vec_mul(Vec3f_Pack4* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
-void sp_4vec_dot(mfloat* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
-void sp_4vec_lengthSq(mfloat* result, Vec3f_Pack4* v0);
-void sp_4vec_add4(Vec3f_Pack4 v0, mfloat result[4]);
+void sp_packVec_pack_single(Vec3f_Pack* out, Vec3f* vec);
+void sp_packVec_extract(Vec3f_Pack* pack, Vec3f* out, size_t idx);
+void sp_packVec_sub(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sp_packVec_add(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sp_packVec_mul(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sp_packVec_dot(mfloat* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sp_packVec_lengthSq(mfloat* result, Vec3f_Pack* v0);
+void sp_packVec_addF(Vec3f_Pack* v0, mfloat* result);

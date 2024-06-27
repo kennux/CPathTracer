@@ -21,6 +21,11 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error: %s\n", description);
 }
 
+static void progressCallback(float progress)
+{
+    printf("%.2f %% Done...\n", progress * 100.0f);
+}
+
 int main(void) {
     GLFWwindow* window;
 
@@ -48,8 +53,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 1280;
-    int textureHeight = 720;
+    int textureWidth = 2560;
+    int textureHeight = 1440;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -73,7 +78,7 @@ int main(void) {
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 58);
-    scene.sphereCount = 8;
+    scene.sphereCount = 58;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -138,7 +143,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 128;
+    params.samplesPerPixel = 2048;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
@@ -151,7 +156,7 @@ int main(void) {
 
     uint64_t rayCount = 0;
     start = clock();
-    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32);
+    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32, progressCallback);
     // traceTile(fullTileParams, backbufferData, &rayCount);
     end = clock();
 
@@ -196,7 +201,7 @@ int main(void) {
 
     char tmpPath[512];
     sprintf((void*)&tmpPath, "%i.bmp", time(NULL));
-    //saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
     // Generate a texture
