@@ -21,9 +21,13 @@ typedef struct BakedSpheres
     Vec3f* boxMin;
     Vec3f* boxMax;
 
+    // Optimized memory access copies
+    Vec3f_Pack4* oCenter;
+
     size_t* matIdx;
 
     size_t sphereCount;
+    size_t oSphereIterationCount;
 } BakedSpheres;
 
 typedef struct Scene

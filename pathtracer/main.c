@@ -73,7 +73,7 @@ int main(void) {
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 58);
-    scene.sphereCount = 58;
+    scene.sphereCount = 8;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -138,7 +138,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 8;
+    params.samplesPerPixel = 128;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
@@ -151,8 +151,8 @@ int main(void) {
 
     uint64_t rayCount = 0;
     start = clock();
-    //traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32);
-    traceTile(fullTileParams, backbufferData, &rayCount);
+    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32);
+    // traceTile(fullTileParams, backbufferData, &rayCount);
     end = clock();
 
     seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <malloc.h>
 #include <string.h>
+#include <stdlib.h>
 #include "ptmath.h"
 #include "scene.h"
 #include "material.h"
@@ -39,6 +40,11 @@ void scene_Bake(Scene* scene, BakedScene* baked)
     baked->spheres.boxMin = malloc(sizeof(Vec3f) * scene->sphereCount);
     baked->spheres.matIdx = malloc(sizeof(size_t) * scene->sphereCount);
     baked->spheres.sphereCount = scene->sphereCount;
+    baked->spheres.oSphereIterationCount = scene->sphereCount / 4;
+    if (baked->spheres.sphereCount % 4 != 0)
+        baked->spheres.oSphereIterationCount++;
+
+    baked->spheres.oCenter = malloc(sizeof(Vec3f_Pack4) * baked->spheres.oSphereIterationCount);
 
     baked->sceneBoundsMin = vec3f(MFLOAT_MAX, MFLOAT_MAX, MFLOAT_MAX);
     baked->sceneBoundsMax = vec3f(MFLOAT_MIN, MFLOAT_MIN, MFLOAT_MIN);
@@ -61,6 +67,34 @@ void scene_Bake(Scene* scene, BakedScene* baked)
 
         p_v3f_min(&baked->sceneBoundsMin, &baked->sceneBoundsMin, &baked->spheres.boxMin[i]);
         p_v3f_max(&baked->sceneBoundsMax, &baked->sceneBoundsMax, &baked->spheres.boxMax[i]);
+    }
+
+    // Clear prepass
+    for (size_t i = 0; i < baked->spheres.oSphereIterationCount; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            baked->spheres.oCenter[i].x[j] = 0;
+            baked->spheres.oCenter[i].y[j] = 0;
+            baked->spheres.oCenter[i].z[j] = 0;
+        }
+    }
+
+    size_t oSphereIdx = 0;
+    for (size_t i = 0; i < baked->spheres.oSphereIterationCount; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+        {
+            size_t mIdx = oSphereIdx + j;
+
+            if (mIdx < scene->sphereCount) {
+                baked->spheres.oCenter[i].x[j] = baked->spheres.center[mIdx].x;
+                baked->spheres.oCenter[i].y[j] = baked->spheres.center[mIdx].y;
+                baked->spheres.oCenter[i].z[j] = baked->spheres.center[mIdx].z;
+            }
+        }
+
+        oSphereIdx += 4;
     }
 
     // Prep mats
@@ -95,44 +129,53 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
         return 0; // Outside of scene bounds
     */
 
+    // Pack ray
+    Vec3f_Pack4 packRayOrigin;
+    Vec3f_Pack4 packRayDir;
+    sp_4vec_pack_single(&packRayOrigin, &ray->origin);
+    sp_4vec_pack_single(&packRayDir, &ray->direction);
+
+    // Prep packs
+    Vec3f_Pack4 packOc;
+    mfloat packB[4];
+    mfloat packC[4];
+    Vec3f oc;
+    mfloat b;
+
     // Spheres
     BakedSpheres spheres = scene->spheres;
-    for (size_t i = 0; i < spheres.sphereCount; i++)
+    for (size_t packIdx = 0; packIdx < spheres.oSphereIterationCount; packIdx++)
     {
-        Vec3f oc;
-        // origin - center
-        p_v3f_sub_v3f(&oc, &ray->origin, &spheres.center[i]);
+        // origin-center
+        sp_4vec_sub(&packOc, &packRayOrigin, &spheres.oCenter[packIdx]);
 
         // oc.direction
-        mfloat b;
-        p_v3f_dot(&b, &oc, &ray->direction);
+        // p_v3f_dot(&b, &oc, &ray->direction);
+        sp_4vec_dot(&packB, &packOc, &packRayDir);
 
-        if (b > 0)
-            continue;
+        // p_v3f_lengthSq(&c, &oc);
+        sp_4vec_lengthSq(&packC, &packOc);
 
-        // length sq of oc
-        mfloat c;
-        p_v3f_lengthSq(&c, &oc);
+        size_t itStart = packIdx * 4;
+        size_t itEnd = min(itStart+4, spheres.sphereCount);
+        for (size_t instIdx = 0; instIdx < 4; instIdx++)
+        {
+            size_t i = itStart + instIdx;
+            if (i >= itEnd)
+                break;
 
-        bool hasHit = false;
-        mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
-        if (discriminantSqr > 0) {
-            mfloat discriminant = sqrt(discriminantSqr);
-            localHitInfo.distance = (-b - discriminant);
-            if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
-                // Calculate hit point
-                p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
+            b = packB[instIdx];
+            if (b > 0)
+                continue;
 
-                // Calculate normal
-                p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
-                p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
+            // length sq of oc
+            mfloat c = packC[instIdx];
 
-                // Set material
-                localHitInfo.matIdx = spheres.matIdx[i];
-
-                hasHit = true;
-            } else {
-                localHitInfo.distance = (-b + discriminant);
+            bool hasHit = false;
+            mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
+            if (discriminantSqr > 0) {
+                mfloat discriminant = sqrt(discriminantSqr);
+                localHitInfo.distance = (-b - discriminant);
                 if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
                     // Calculate hit point
                     p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
@@ -145,21 +188,34 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
                     localHitInfo.matIdx = spheres.matIdx[i];
 
                     hasHit = true;
+                } else {
+                    localHitInfo.distance = (-b + discriminant);
+                    if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
+                        // Calculate hit point
+                        p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
+
+                        // Calculate normal
+                        p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
+                        p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
+
+                        // Set material
+                        localHitInfo.matIdx = spheres.matIdx[i];
+
+                        hasHit = true;
+                    }
                 }
             }
-        }
 
-        if (hasHit)
-        {
-            if (hitCount == 0)
-                *outHitInfo = localHitInfo;
-            else
-            {
-                if (outHitInfo->distance > localHitInfo.distance)
-                    *outHitInfo = localHitInfo; // Better hit - exchange!
+            if (hasHit) {
+                if (hitCount == 0)
+                    *outHitInfo = localHitInfo;
+                else {
+                    if (outHitInfo->distance > localHitInfo.distance)
+                        *outHitInfo = localHitInfo; // Better hit - exchange!
+                }
+
+                hitCount++;
             }
-
-            hitCount++;
         }
     }
 

@@ -22,6 +22,13 @@ typedef struct Ray
     Vec3f direction;
 } Ray;
 
+typedef struct Vec3f_Pack4
+{
+    mfloat x[4];
+    mfloat y[4];
+    mfloat z[4];
+} Vec3f_Pack4;
+
 // Ray
 void p_ray_getPoint(Vec3f* point, Ray* ray, mfloat d);
 Vec3f ray_getPoint(Ray* ray, mfloat d);
@@ -54,3 +61,12 @@ mfloat v3f_dot(Vec3f v0, Vec3f v1);
 Vec3f v3f_reflect(Vec3f vec, Vec3f normal);
 Vec3f v3f_min(Vec3f v0, Vec3f v1);
 Vec3f v3f_max(Vec3f v0, Vec3f v1);
+
+void sp_4vec_pack_single(Vec3f_Pack4* out, Vec3f* vec);
+void sp_4vec_extract(Vec3f_Pack4* pack, Vec3f* out, size_t idx);
+void sp_4vec_sub(Vec3f_Pack4* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
+void sp_4vec_add(Vec3f_Pack4* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
+void sp_4vec_mul(Vec3f_Pack4* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
+void sp_4vec_dot(mfloat* result, Vec3f_Pack4* v0, Vec3f_Pack4* v1);
+void sp_4vec_lengthSq(mfloat* result, Vec3f_Pack4* v0);
+void sp_4vec_add4(Vec3f_Pack4 v0, mfloat result[4]);
