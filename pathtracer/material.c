@@ -31,7 +31,7 @@ int material_Scatter(HitInfo* hitInfo, BakedMaterials* materials, size_t matInde
     {
         case MaterialType_Lambert: {
             Vec3f target, randomUnitV;
-            random_unit_vector(&randomUnitV, random);
+            random_unitVector(&randomUnitV, random);
 
             p_v3f_add_v3f(&target, &hitInfo->point, &hitInfo->normal);
             p_v3f_add_v3f(&target, &target, &randomUnitV);
@@ -50,7 +50,7 @@ int material_Scatter(HitInfo* hitInfo, BakedMaterials* materials, size_t matInde
             ray->origin = hitInfo->point;
 
             Vec3f randomVec;
-            random_in_unit_sphere(&randomVec, random);
+            random_inUnitSphere(&randomVec, random);
             p_v3f_mul_f(&randomVec, &randomVec, materials->roughness[matIndex]);
             p_v3f_add_v3f(&ray->direction, &reflected, &randomVec);
             p_v3f_normalize(&ray->direction, &ray->direction);

@@ -102,7 +102,7 @@ void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuf
         rayCounts[i] = 0;
     }
 
-    while (true)
+    while (1)
     {
         DWORD waitResult = WaitForMultipleObjects(threadCount, threads, TRUE, 1000);
         if (waitResult >= WAIT_OBJECT_0 && waitResult < WAIT_OBJECT_0 + threadCount)
@@ -133,23 +133,28 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
 
     // RGB
     Vec3f color;
+    Ray* rays = malloc(params.samplesPerPixel * sizeof(Ray));
     Ray ray;
 
     int endX = tileParams.xStart + tileParams.regionWidth;
     int endY = tileParams.yStart + tileParams.regionHeight;
 
-    for (int x = tileParams.xStart; x < endX; x++)
+    for (int y = tileParams.yStart; y < endY; y++)
     {
-        for (int y = tileParams.yStart; y < endY; y++)
+        mfloat v = y * invHeight;
+        size_t yBackbufferIdx = y * params.backbufferWidth;
+
+        for (int x = tileParams.xStart; x < endX; x++)
         {
             color = vec3f(0,0,0);
-            mfloat u = x * invWidth, v = y * invHeight;
-            int colorIndex = (y * params.backbufferWidth + x) * 4;
+            mfloat u = x * invWidth;
+            int colorIndex = (yBackbufferIdx + x) * 4;
 
+            camera_GetRays(rays, params.samplesPerPixel, params.camera, u, v, &rand);
             for (int r = 0; r < params.samplesPerPixel; r++)
             {
                 // Get ray
-                camera_GetRay(&ray, params.camera, u, v, &rand);
+                ray = rays[r];
 
                 Vec3f localColor = params.scene->ambientLight;
                 size_t bounceCount = 0;
@@ -184,4 +189,6 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
             backbuffer[colorIndex + 3] = 1;
         }
     }
+
+    free(rays);
 }

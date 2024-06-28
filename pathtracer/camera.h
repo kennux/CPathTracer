@@ -8,8 +8,10 @@ typedef struct Camera {
     Vec3f horizontal;
     Vec3f vertical;
     Vec3f u, v, w;
+
     float lensRadius;
 } Camera;
 
 Camera camera_Construct(Vec3f lookFrom, Vec3f lookAt, Vec3f vup, float vfov, float aspect, float aperture, float focusDist);
 void camera_GetRay(Ray *outRay, Camera* camera, float u, float v, RandomState* rndState);
+void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, float v, RandomState* rndState);

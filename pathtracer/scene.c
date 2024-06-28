@@ -2,6 +2,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdlib.h>
+#include <minmax.h>
 #include "ptmath.h"
 #include "scene.h"
 #include "material.h"
@@ -132,13 +133,13 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     // Pack ray
     Vec3f_Pack packRayOrigin;
     Vec3f_Pack packRayDir;
-    sp_packVec_pack_single(&packRayOrigin, &ray->origin);
-    sp_packVec_pack_single(&packRayDir, &ray->direction);
+    si_v_pack_s(&packRayOrigin, &ray->origin);
+    si_v_pack_s(&packRayDir, &ray->direction);
 
     // Prep packs
     Vec3f_Pack packOc;
-    mfloat packB[SIMD_MATH_WIDTH];
-    mfloat packC[SIMD_MATH_WIDTH];
+    AlignedFloatPack packB;
+    AlignedFloatPack packC;
     Vec3f oc;
     mfloat b;
 
@@ -147,14 +148,14 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     for (size_t packIdx = 0; packIdx < spheres.oSphereIterationCount; packIdx++)
     {
         // origin-center
-        sp_packVec_sub(&packOc, &packRayOrigin, &spheres.oCenter[packIdx]);
+        si_v_sub_pp(&packOc, &packRayOrigin, &spheres.oCenter[packIdx]);
 
         // oc.direction
         // p_v3f_dot(&b, &oc, &ray->direction);
-        sp_packVec_dot(&packB, &packOc, &packRayDir);
+        si_v_dot_pp(&packB, &packOc, &packRayDir);
 
         // p_v3f_lengthSq(&c, &oc);
-        sp_packVec_lengthSq(&packC, &packOc);
+        si_v_lenSq_p(&packC, &packOc);
 
         size_t itStart = packIdx * SIMD_MATH_WIDTH;
         size_t itEnd = min(itStart+SIMD_MATH_WIDTH, spheres.sphereCount);

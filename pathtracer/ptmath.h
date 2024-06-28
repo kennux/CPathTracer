@@ -41,14 +41,20 @@ typedef struct Ray
 } Ray;
 
 #if SIMD_MATH_WIDTH == 8
+typedef mfloat AlignedFloatPack[8] __attribute__((aligned(32)));
+#elif SIMD_MATH_WIDTH == 4
+typedef mfloat AlignedFloatPack[8] __attribute__((aligned(16)));
+#endif
+
+#if SIMD_MATH_WIDTH == 8
 __declspec(align(32)) typedef struct Vec3f_Pack
 #elif SIMD_MATH_WIDTH == 4
 __declspec(align(16)) typedef struct Vec3f_Pack
 #endif
 {
-    mfloat x[SIMD_MATH_WIDTH];
-    mfloat y[SIMD_MATH_WIDTH];
-    mfloat z[SIMD_MATH_WIDTH];
+    AlignedFloatPack x;
+    AlignedFloatPack y;
+    AlignedFloatPack z;
 } Vec3f_Pack;
 
 // Ray
@@ -84,11 +90,26 @@ Vec3f v3f_reflect(Vec3f vec, Vec3f normal);
 Vec3f v3f_min(Vec3f v0, Vec3f v1);
 Vec3f v3f_max(Vec3f v0, Vec3f v1);
 
-void sp_packVec_pack_single(Vec3f_Pack* out, Vec3f* vec);
-void sp_packVec_extract(Vec3f_Pack* pack, Vec3f* out, size_t idx);
-void sp_packVec_sub(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void sp_packVec_add(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void sp_packVec_mul(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void sp_packVec_dot(mfloat* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void sp_packVec_lengthSq(mfloat* result, Vec3f_Pack* v0);
-void sp_packVec_addF(Vec3f_Pack* v0, mfloat* result);
+// si_ = SIMD
+// - f_ = Float
+// - v_ = Vector
+// mul/add/... = Operation
+// - s = Single
+// - p = Pack
+
+void si_f_mul_pp(mfloat* result, mfloat* pack1, mfloat* pack2);
+void si_f_mul_ps(mfloat* result, mfloat* pack1, mfloat val);
+
+void si_v_pack_s(Vec3f_Pack* out, Vec3f* vec);
+void si_v_extract_s(Vec3f_Pack* pack, Vec3f* out, size_t idx);
+void si_v_sub_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void si_v_add_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void si_v_add_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
+void si_v_mul_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void si_v_dot_pp(mfloat* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void si_v_lenSq_p(mfloat* result, Vec3f_Pack* v0);
+void si_vf_add_pp(Vec3f_Pack* result, Vec3f_Pack* v0, mfloat* pack1);
+void si_vf_add_sp(Vec3f_Pack* result, Vec3f* v0, mfloat* pack1);
+void si_v_sumComps_p(mfloat *result, Vec3f_Pack *v0);
+void si_v_normalizeUnsafe_p(Vec3f_Pack* result, Vec3f_Pack *v0);
+void si_v_normalize_p(Vec3f_Pack* result, Vec3f_Pack *v0);

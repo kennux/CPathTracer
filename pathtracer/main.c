@@ -53,8 +53,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 2560;
-    int textureHeight = 1440;
+    int textureWidth = 1280;
+    int textureHeight = 720;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -143,21 +143,22 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 2048;
+    params.samplesPerPixel = 256;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
 
     TraceTileParameters fullTileParams = singleTileTraceParams(params);
 
-    size_t parallelTileCount = parallelTileTraceParams_TileCount(params, 16, 16);
+    int tileSize = 16;
+    size_t parallelTileCount = parallelTileTraceParams_TileCount(params, tileSize, tileSize);
     TraceTileParameters* parallelTileParams = malloc(sizeof(TraceTileParameters) * parallelTileCount);
-    parallelTileTraceParams(params, 16, 16, parallelTileParams);
+    parallelTileTraceParams(params, tileSize, tileSize, parallelTileParams);
 
     uint64_t rayCount = 0;
     start = clock();
     traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32, progressCallback);
-    // traceTile(fullTileParams, backbufferData, &rayCount);
+    //traceTile(fullTileParams, backbufferData, &rayCount);
     end = clock();
 
     seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
@@ -201,7 +202,7 @@ int main(void) {
 
     char tmpPath[512];
     sprintf((void*)&tmpPath, "%i.bmp", time(NULL));
-    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    // saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
     // Generate a texture
