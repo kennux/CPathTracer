@@ -2,6 +2,9 @@
 
 A Path Tracer written in C with CMake - for fun!
 
+Disclaimer: I've never used C before except for a few small mini programs :D
+There might be extremely broken or stupid things in this code.
+
 ![Image](image.png?raw=true "Image")
 
 # Compilation
