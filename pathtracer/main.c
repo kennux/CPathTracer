@@ -53,8 +53,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 640;
-    int textureHeight = 480;
+    int textureWidth = 1920;
+    int textureHeight = 1080;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -80,7 +80,7 @@ int main(void) {
     materialMetal->type = MaterialType_Metal;
     Material* materialEmissive = &scene.materials[3];
     materialEmissive->albedo = vec3f(1, 1, 1);
-    materialEmissive->emissive = vec3f(0, 30, 0);
+    materialEmissive->emissive = vec3f(300, 300, 300);
     materialEmissive->type = MaterialType_Emissive;
     Material* materialDielectric = &scene.materials[4];
     materialDielectric->albedo = vec3f(1, 1, 1);
@@ -120,11 +120,11 @@ int main(void) {
     editSphere->material = materialLambert1;
     editSphere = &scene.spheres[7];
     editSphere->radius = 0.5f;
-    editSphere->center = vec3f(0, 1.25f, 0.5f);
-    editSphere->material = materialDielectric;
+    editSphere->center = vec3f(0, 2.25f, 0.5f);
+    editSphere->material = materialEmissive;
     editSphere = &scene.spheres[8];
     editSphere->radius = 0.5f;
-    editSphere->center = vec3f(1.25f, 0, 0);
+    editSphere->center = vec3f(0.25f, 1.f, 0);
     editSphere->material = materialDielectric;
 
     for (size_t i = 0; i < 50; i++)
@@ -145,7 +145,8 @@ int main(void) {
 
     // Setup lighting
     scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
-    // scene.ambientLight = vec3f(0.25f, 0.25f, 0.25f);
+    scene.ambientLight = vec3f(0.f, 0.f, 0.f);
+    scene.ambientLight = vec3f(0.01f, 0.01f, 0.01f);
 
     clock_t start = clock();
     BakedScene bakedScene;
@@ -159,7 +160,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 256;
+    params.samplesPerPixel = 2048;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 1000000;
@@ -218,7 +219,7 @@ int main(void) {
 
     char tmpPath[512];
     sprintf((void*)&tmpPath, "%i.bmp", time(NULL));
-    //saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
     // Generate a texture

@@ -49,6 +49,9 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
     {
         size_t i = scene->emissiveSpheres[j];
 
+        if (hit->matIdx == scene->spheres.matIdx[i])
+            continue; // Skip self
+
         // sw = sphereCenter - hitPoint
         p_v3f_sub_v3f(&sw, &scene->spheres.center[i], &hit->point);
         // sw = normalize(sw)
@@ -68,7 +71,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
         mfloat hitToSphereDistSq = 0;
         p_v3f_lengthSq(&hitToSphereDistSq, &sphereCenterToHit);
 
-        mfloat cosAMax = sqrtf(1.0f - scene->spheres.radius[i]*scene->spheres.radius[i] / hitToSphereDistSq);
+        mfloat cosAMax = sqrtf(1.0f - scene->spheres.radiusSq[i] / hitToSphereDistSq);
         mfloat eps1 = random_01(random), eps2 = random_01(random);
         mfloat cosA = 1.0f - eps1 + eps1 * cosAMax;
         mfloat sinA = sqrtf(1.0f - cosA*cosA);
@@ -84,7 +87,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
         lightRay.origin = hit->point;
         ++rayCount;
         int hits = scene_Raycast(&lightHit, scene, &lightRay, 0.00001f, 9999999);
-        if (hits > 0 && hit->hitObjectPtr == &scene->spheres.center[i])
+        if (hits > 0 && lightHit.hitObjectPtr == &scene->spheres.center[i])
         {
             mfloat omega = 2 * PI * (1 - cosAMax);
 
