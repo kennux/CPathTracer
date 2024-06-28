@@ -38,9 +38,6 @@ Camera camera_Construct(Vec3f lookFrom, Vec3f lookAt, Vec3f vup, float vfov, flo
 
 void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, float v, RandomState* rndState)
 {
-    for (size_t i = 0; i < rayCount; i++)
-        camera_GetRay(&outRays[i], camera, u, v, rndState);
-
     Vec3f horizontalU, verticalV, rayDirBase;
     p_v3f_mul_f(&horizontalU, &camera->horizontal, u);
     p_v3f_mul_f(&verticalV, &camera->vertical, v);

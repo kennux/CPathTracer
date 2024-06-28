@@ -432,23 +432,17 @@ void si_v_mul_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1)
 #elif SIMD_MATH_WIDTH == 8
     __m256 xmm1 = _mm256_broadcast_ss(&v0->x);
     __m256 xmm2 = _mm256_loadu_ps(&v1->x);
-
     __m256 xmm_result = _mm256_mul_ps(xmm1, xmm2);
-
     _mm256_store_ps(&result->x, xmm_result);
 
     xmm1 = _mm256_broadcast_ss(&v0->y);
     xmm2 = _mm256_loadu_ps(&v1->y);
-
     xmm_result = _mm256_mul_ps(xmm1, xmm2);
-
     _mm256_store_ps(&result->y, xmm_result);
 
     xmm1 = _mm256_broadcast_ss(&v0->z);
     xmm2 = _mm256_loadu_ps(&v1->z);
-
     xmm_result = _mm256_mul_ps(xmm1, xmm2);
-
     _mm256_store_ps(&result->z, xmm_result);
 #endif
 #else

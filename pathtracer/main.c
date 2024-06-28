@@ -143,7 +143,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 256;
+    params.samplesPerPixel = 32;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 10000;
