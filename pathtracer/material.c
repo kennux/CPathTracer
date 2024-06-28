@@ -10,6 +10,7 @@ void bakedMaterials_Free(BakedMaterials* materials)
     free(materials->albedo);
     free(materials->type);
     free(materials->emissive);
+    free(materials->ri);
 }
 
 BakedMaterials material_Bake(Material* materials, size_t count)
@@ -18,6 +19,7 @@ BakedMaterials material_Bake(Material* materials, size_t count)
     mats.type = malloc(sizeof(MaterialType) * count);
     mats.albedo = malloc(sizeof(Vec3f) * count);
     mats.roughness = malloc(sizeof(mfloat) * count);
+    mats.ri = malloc(sizeof(mfloat) * count);
     mats.emissive = malloc(sizeof(Vec3f) * count);
     mats.materialCount = count;
 
@@ -27,11 +29,12 @@ BakedMaterials material_Bake(Material* materials, size_t count)
         mats.albedo[i] = materials[i].albedo;
         mats.roughness[i] = materials[i].roughness;
         mats.emissive[i] = materials[i].emissive;
+        mats.ri[i] = materials[i].ri;
     }
     return mats;
 }
 
-void _material_Lighting(Ray* rayIn, HitInfo* hit, BakedScene* scene, BakedMaterials* materials, Vec3f* outLight, RandomState* random)
+void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene* scene, BakedMaterials* materials, Vec3f* outLight, RandomState* random)
 {
     size_t* emissiveSpheres = &scene->emissiveSpheres;
 
@@ -79,6 +82,7 @@ void _material_Lighting(Ray* rayIn, HitInfo* hit, BakedScene* scene, BakedMateri
         p_v3f_add_v3f(&lightRay.direction, &lightRay.direction, &sv);
 
         lightRay.origin = hit->point;
+        ++rayCount;
         int hits = scene_Raycast(&lightHit, scene, &lightRay, 0.00001f, 9999999);
         if (hits > 0 && hit->hitObjectPtr == &scene->spheres.center[i])
         {
@@ -111,7 +115,7 @@ int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materi
             random_unitVector(&randomUnitV, random);
 
             Vec3f light = vec3f(0,0,0);
-            _material_Lighting(ray, hitInfo, scene, materials, &light, random);
+            _material_Lighting(ray, rayCount, hitInfo, scene, materials, &light, random);
 
             p_v3f_add_v3f(&target, &hitInfo->point, &hitInfo->normal);
             p_v3f_add_v3f(&target, &target, &randomUnitV);
@@ -142,6 +146,56 @@ int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materi
             if (dot > 0)
                 return 1;
             break;
+        }
+        case MaterialType_Dielectric: {
+            Vec3f outwardNorm, refracted, reflected;
+            mfloat refrIdxRatio;
+            mfloat ri = materials->ri[hitInfo->matIdx];
+
+            p_v3f_reflect(&reflected, &ray->direction, &hitInfo->normal);
+
+            *attenuation = vec3f(1,1,1);
+
+            mfloat dt;
+            p_v3f_dot(&dt, &ray->direction, &hitInfo->normal);
+            if (dt > 0)
+            {
+                p_v3f_mul_f(&outwardNorm, &hitInfo->normal, -1);
+                refrIdxRatio = ri;
+            }
+            else
+            {
+                outwardNorm = hitInfo->normal;
+                refrIdxRatio = 1.0f / ri;
+            }
+
+            mfloat reflProb = 1;
+            if (p_v3f_refract(&refracted, &ray->direction, &outwardNorm, refrIdxRatio))
+            {
+                if (dt > 0)
+                {
+                    mfloat discriminant = 1-ri * ri * (1 - dt * dt);
+
+                    if (discriminant > 0.f)
+                    {
+                        float r0 = pow((1.f - ri) / (1.f + ri), 2);
+                        reflProb = r0 + (1.f - r0) * pow(1.f - sqrtf(discriminant), 5);
+                    }
+                }
+                else
+                {
+                    float r0 = pow((1.f - ri) / (1.f + ri), 2);
+                    reflProb = r0 + (1.f - r0) * pow(1.f + dt, 5);
+                }
+            }
+
+            ray->origin = hitInfo->point;
+            if (random_01(random) < reflProb)
+                p_v3f_normalize(&ray->direction, &reflected);
+            else
+                p_v3f_normalize(&ray->direction, &refracted);
+
+            return 1;
         }
         case MaterialType_Emissive: {
             *attenuation = materials->emissive[matIndex];

@@ -63,8 +63,8 @@ int main(void) {
     Scene scene;
 
     // Create materials
-    scene.materials = malloc(sizeof(Material) * 4);
-    scene.materialCount = 4;
+    scene.materials = malloc(sizeof(Material) * 5);
+    scene.materialCount = 5;
     Material* materialLambert1 = &scene.materials[0];
     materialLambert1->albedo = vec3f(0.8f, 0.4f, 0.4f);
     materialLambert1->emissive = vec3f(0,0,0);
@@ -78,14 +78,18 @@ int main(void) {
     materialMetal->emissive = vec3f(0,0,0);
     materialMetal->roughness = 0.025f;
     materialMetal->type = MaterialType_Metal;
-    Material* emissiveMaterial = &scene.materials[3];
-    emissiveMaterial->albedo = vec3f(1, 1, 1);
-    emissiveMaterial->emissive = vec3f(0,30,0);
-    emissiveMaterial->type = MaterialType_Emissive;
+    Material* materialEmissive = &scene.materials[3];
+    materialEmissive->albedo = vec3f(1, 1, 1);
+    materialEmissive->emissive = vec3f(0, 30, 0);
+    materialEmissive->type = MaterialType_Emissive;
+    Material* materialDielectric = &scene.materials[4];
+    materialDielectric->albedo = vec3f(1, 1, 1);
+    materialDielectric->ri = 1.5;
+    materialDielectric->type = MaterialType_Dielectric;
 
     // Create spheres
-    scene.spheres = malloc(sizeof(Sphere) * 58);
-    scene.sphereCount = 8;
+    scene.spheres = malloc(sizeof(Sphere) * 59);
+    scene.sphereCount = 9;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -116,8 +120,12 @@ int main(void) {
     editSphere->material = materialLambert1;
     editSphere = &scene.spheres[7];
     editSphere->radius = 0.5f;
-    editSphere->center = vec3f(0.5f, 1.25f, 0.5f);
-    editSphere->material = emissiveMaterial;
+    editSphere->center = vec3f(0, 1.25f, 0.5f);
+    editSphere->material = materialDielectric;
+    editSphere = &scene.spheres[8];
+    editSphere->radius = 0.5f;
+    editSphere->center = vec3f(1.25f, 0, 0);
+    editSphere->material = materialDielectric;
 
     for (size_t i = 0; i < 50; i++)
     {
@@ -126,7 +134,7 @@ int main(void) {
         mfloat x = -4.0f + (row);
         mfloat z = -2.0f - (col);
 
-        editSphere = &scene.spheres[i+8];
+        editSphere = &scene.spheres[i+9];
         editSphere->radius = 0.5f;
         editSphere->center = vec3f(x, 0, z);
         editSphere->material = i % 2 == 0 ? materialLambert1 : materialMetal;
@@ -136,8 +144,8 @@ int main(void) {
     editSphere->materialLambert1 = materialLambert1;*/
 
     // Setup lighting
-    // scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
-    scene.ambientLight = vec3f(0.25f, 0.25f, 0.25f);
+    scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
+    // scene.ambientLight = vec3f(0.25f, 0.25f, 0.25f);
 
     clock_t start = clock();
     BakedScene bakedScene;

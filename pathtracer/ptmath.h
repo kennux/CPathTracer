@@ -73,6 +73,7 @@ void p_v3f_lengthSq(mfloat* out, Vec3f* vec);
 void p_v3f_cross(Vec3f* out, Vec3f* v0, Vec3f* v1);
 void p_v3f_dot(mfloat* out, Vec3f* v0, Vec3f* v1);
 void p_v3f_reflect(Vec3f* out, Vec3f* vec, Vec3f* normal);
+bool p_v3f_refract(Vec3f* out, Vec3f* vec, Vec3f* normal, mfloat refractionIdxRatio);
 void p_v3f_min(Vec3f *out, Vec3f* v0, Vec3f* v1);
 void p_v3f_max(Vec3f *out, Vec3f* v0, Vec3f* v1);
 

@@ -48,7 +48,7 @@ void p_v3f_normalize(Vec3f* out, Vec3f* vec)
 }
 void p_v3f_length(mfloat* out, Vec3f* vec)
 {
-    *out = sqrt((vec->x * vec->x) + (vec->y * vec->y) + (vec->z * vec->z));
+    *out = sqrtf((vec->x * vec->x) + (vec->y * vec->y) + (vec->z * vec->z));
 }
 void p_v3f_lengthSq(mfloat* out, Vec3f* vec)
 {
@@ -71,6 +71,34 @@ void p_v3f_dot(mfloat* out, Vec3f* v0, Vec3f* v1)
             + (v0->y * v1->y)
             + (v0->z * v1->z);
 }
+
+bool p_v3f_refract(Vec3f* out, Vec3f* vec, Vec3f* normal, mfloat refractionIdxRatio)
+{
+    mfloat dt;
+    p_v3f_dot(&dt, vec, normal);
+    mfloat discriminant = 1.0f - refractionIdxRatio * refractionIdxRatio * (1 - dt * dt);
+    if (discriminant > 0)
+    {
+        Vec3f tmp;
+        // tmp = n * dt
+        p_v3f_mul_f(&tmp, normal, dt);
+
+        // out = vec - tmp [n * dt]
+        p_v3f_sub_v3f(out, vec, &tmp);
+
+        // out = out * refractionIdxRatio
+        p_v3f_mul_f(out, out, refractionIdxRatio);
+
+        // tmp = n * sqrt(discriminant)
+        p_v3f_mul_f(&tmp, normal, sqrtf(discriminant));
+
+        // out = out - tmp [n * sqrt(discriminant)]
+        p_v3f_sub_v3f(out, out, &tmp);
+        return true;
+    }
+    return false;
+}
+
 void p_v3f_reflect(Vec3f* out, Vec3f* vec, Vec3f* normal)
 {
     mfloat dot;

@@ -11,7 +11,8 @@ typedef enum MaterialType
 {
     MaterialType_Lambert,
     MaterialType_Metal,
-    MaterialType_Emissive
+    MaterialType_Emissive,
+    MaterialType_Dielectric
 } MaterialType;
 
 typedef struct Material
@@ -22,6 +23,9 @@ typedef struct Material
 
     // Metal
     mfloat roughness;
+
+    // Dielectric
+    mfloat ri;
 } Material;
 
 typedef struct BakedMaterials
@@ -34,6 +38,9 @@ typedef struct BakedMaterials
 
     // Metal
     mfloat* roughness;
+
+    // Dielectric
+    mfloat* ri;
 
     size_t materialCount;
 } BakedMaterials;
