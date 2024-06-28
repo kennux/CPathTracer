@@ -109,7 +109,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
     }
 }
 
-int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, uint64_t* rayCount, RandomState* random)
+int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Vec3f* light, Vec3f* emissive, Ray* ray, uint64_t* rayCount, RandomState* random)
 {
     switch (materials->type[matIndex])
     {
@@ -117,8 +117,8 @@ int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materi
             Vec3f target, randomUnitV;
             random_unitVector(&randomUnitV, random);
 
-            Vec3f light = vec3f(0,0,0);
-            _material_Lighting(ray, rayCount, hitInfo, scene, materials, &light, random);
+            Vec3f _light = vec3f(0,0,0);
+            _material_Lighting(ray, rayCount, hitInfo, scene, materials, &_light, random);
 
             p_v3f_add_v3f(&target, &hitInfo->point, &hitInfo->normal);
             p_v3f_add_v3f(&target, &target, &randomUnitV);
@@ -128,7 +128,8 @@ int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materi
             p_v3f_sub_v3f(&ray->direction, &target, &hitInfo->point);
             p_v3f_normalize(&ray->direction, &ray->direction);
 
-            p_v3f_add_v3f(attenuation, &materials->albedo[matIndex], &light);
+            *attenuation = materials->albedo[matIndex];
+            *light = _light;
             return 1;
         }
         case MaterialType_Metal: {
@@ -201,7 +202,7 @@ int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materi
             return 1;
         }
         case MaterialType_Emissive: {
-            *attenuation = materials->emissive[matIndex];
+            *emissive = materials->emissive[matIndex];
             return 0;
         }
     }

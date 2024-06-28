@@ -53,8 +53,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 1920;
-    int textureHeight = 1080;
+    int textureWidth = 2560;
+    int textureHeight = 1440;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -80,7 +80,7 @@ int main(void) {
     materialMetal->type = MaterialType_Metal;
     Material* materialEmissive = &scene.materials[3];
     materialEmissive->albedo = vec3f(1, 1, 1);
-    materialEmissive->emissive = vec3f(300, 300, 300);
+    materialEmissive->emissive = vec3f(4, 4, 4);
     materialEmissive->type = MaterialType_Emissive;
     Material* materialDielectric = &scene.materials[4];
     materialDielectric->albedo = vec3f(1, 1, 1);
@@ -160,7 +160,7 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 2048;
+    params.samplesPerPixel = 8192;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 1000000;

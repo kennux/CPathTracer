@@ -122,6 +122,25 @@ void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuf
     free(params);
 }
 
+Vec3f _composit(Vec3f* attens, Vec3f* emissions, Vec3f* light, Vec3f* ambient, size_t idx, size_t count)
+{
+    if (idx >= count)
+        return *ambient; // End reached
+
+    // Emission + light
+    Vec3f out;
+    p_v3f_add_v3f(&out, &emissions[idx], &light[idx]);
+
+    // (Emission + Light) + Atten * Recursion
+    Vec3f next = _composit(attens, emissions, light, ambient, idx + 1, count);
+
+    Vec3f attenMul;
+    p_v3f_mul_v3f(&attenMul, &attens[idx], &next);
+
+    p_v3f_add_v3f(&out, &out, &attenMul);
+    return out;
+}
+
 void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount)
 {
     TraceParameters  params = tileParams.traceParams;
@@ -156,7 +175,8 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
                 // Get ray
                 ray = rays[r];
 
-                Vec3f localColor = params.scene->ambientLight;
+                Vec3f finalColor = vec3f(0,0,0);
+                Vec3f attenAccum = vec3f(1,1,1);
                 size_t bounceCount = 0;
                 while (bounceCount < params.maxBounces)
                 {
@@ -166,23 +186,40 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
                     int hits = scene_Raycast(&hitInfo, params.scene, &ray, 0.01, params.maxDepth);
                     if (hits > 0 && hitInfo.matIdx < params.scene->materials.materialCount)
                     {
-                        Vec3f attenuation;
-                        int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &ray, rayCount, &rand);
-                        p_v3f_mul_v3f(&localColor, &attenuation, &localColor);
+                        Vec3f attenuation = vec3f(0,0,0);
+                        Vec3f light = vec3f(0,0,0);
+                        Vec3f emission = vec3f(0,0,0);
 
-                        if (scatter == 0)
+                        int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &light, &emission, &ray, rayCount, &rand);
+
+                        Vec3f eAndL;
+                        p_v3f_add_v3f(&eAndL, &light, &emission);
+
+                        Vec3f attenAccumMulEAndL;
+                        p_v3f_mul_v3f(&attenAccumMulEAndL, &attenAccum, &eAndL);
+                        p_v3f_add_v3f(&finalColor, &finalColor, &attenAccumMulEAndL);
+
+                        p_v3f_mul_v3f(&attenAccum, &attenAccum, &attenuation);
+
+                        if (scatter == 0) {
+                            Vec3f tmp;
+                            p_v3f_mul_v3f(&tmp, &attenAccum, &params.scene->materials.emissive[hitInfo.matIdx]);
+                            p_v3f_add_v3f(&finalColor, &finalColor, &tmp);
                             break;
+                        }
                     }
                     else
+                    {
+                        Vec3f tmp;
+                        p_v3f_mul_v3f(&tmp, &attenAccum, &params.scene->ambientLight);
+                        p_v3f_add_v3f(&finalColor, &finalColor, &tmp);
                         break;
+                    }
 
                     bounceCount++;
                 }
 
-                localColor.x = fmin(1, localColor.x);
-                localColor.y = fmin(1, localColor.y);
-                localColor.z = fmin(1, localColor.z);
-                p_v3f_add_v3f(&color, &localColor, &color);
+                p_v3f_add_v3f(&color, &finalColor, &color);
             }
 
             p_v3f_mul_f(&color, &color, invSamplesPerPixel);
