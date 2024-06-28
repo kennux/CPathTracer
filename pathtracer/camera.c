@@ -38,12 +38,17 @@ Camera camera_Construct(Vec3f lookFrom, Vec3f lookAt, Vec3f vup, float vfov, flo
 
 void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, float v, RandomState* rndState)
 {
-    /*for (size_t i = 0; i < rayCount; i++)
-        camera_GetRay(&outRays[i], camera, u, v, rndState);*/
+    for (size_t i = 0; i < rayCount; i++)
+        camera_GetRay(&outRays[i], camera, u, v, rndState);
 
-    Vec3f offset, offset1, offset2;
+    Vec3f horizontalU, verticalV, rayDirBase;
+    p_v3f_mul_f(&horizontalU, &camera->horizontal, u);
+    p_v3f_mul_f(&verticalV, &camera->vertical, v);
+    p_v3f_add_v3f(&rayDirBase, &camera->lowerLeftCorner, &horizontalU);
+    p_v3f_add_v3f(&rayDirBase, &rayDirBase, &verticalV);
+    p_v3f_sub_v3f(&rayDirBase, &rayDirBase, &camera->origin);
 
-    Vec3f_Pack packOffset1, packOffset2, packOffset, packRayOrigin;
+    Vec3f_Pack packOffset1, packOffset2, packOffset, packRayOrigin, packRayDir;
     AlignedFloatPack rndMulLensU, rndMulLensV;
     for (size_t i = 0; i < rayCount; i += SIMD_MATH_WIDTH)
     {
@@ -64,34 +69,10 @@ void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, floa
         // rayOrigin = camOrigin + offset
         si_v_add_sp(&packRayOrigin, &camera->origin, &packOffset);
 
-        /*
-        for (size_t j = 0; j < SIMD_MATH_WIDTH; j++) {
-            size_t idx = i + j;
+        // rayDirBase - offset
+        si_v_sub_sp(&packRayDir, &rayDirBase, &packOffset);
 
-            if (idx >= rayCount)
-                break; // We're done
-
-            Ray *outRay = &outRays[idx];
-
-            // offset1 = u * vecX * lensRadius
-            p_v3f_mul_f(&offset1, &camera->u, randomVec.x[j] * camera->lensRadius);
-            // offset2 = v * vecX * lensRadius
-            p_v3f_mul_f(&offset2, &camera->v, randomVec.y[j] * camera->lensRadius);
-
-            // offset = offset1 + offset2
-            p_v3f_add_v3f(&offset, &offset1, &offset2);
-
-            Vec3f cOffset, cOffset2, cOffset1, cRayOrigin;
-            sp_packVec_extract(&packOffset, &cOffset, idx);
-            sp_packVec_extract(&packOffset1, &cOffset1, idx);
-            sp_packVec_extract(&packOffset2, &cOffset2, idx);
-            si_v_extract_s(&packRayOrigin, &cRayOrigin, idx);
-
-            // rayOrigin = camOrigin + offset
-            p_v3f_add_v3f(&outRay->origin, &camera->origin, &offset);
-
-            int jk = 123;
-        }*/
+        si_v_normalizeUnsafe_p(&packRayDir, &packRayDir);
 
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
@@ -101,25 +82,9 @@ void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, floa
                 break; // We're done
 
             Ray* outRay = &outRays[rayIdx];
-            /*
-            // offset1 = u * vecX * lensRadius
-            p_v3f_mul_f(&offset1, &camera->u, randomVec.x[j] * camera->lensRadius);
-            // offset2 = v * vecX * lensRadius
-            p_v3f_mul_f(&offset2, &camera->v, randomVec.y[j] * camera->lensRadius);
 
-            // offset = offset1 + offset2
-            p_v3f_add_v3f(&offset, &offset1, &offset2);
-
-            // rayOrigin = camOrigin + offset
-            p_v3f_add_v3f(&outRay->origin, &camera->origin, &offset);*/
-
-            si_v_extract_s(&packOffset, &offset, j);
+            si_v_extract_s(&packRayDir, &outRay->direction, j);
             si_v_extract_s(&packRayOrigin, &outRay->origin, j);
-
-            outRay->direction.x = (camera->lowerLeftCorner.x + u * camera->horizontal.x + v * camera->vertical.x - camera->origin.x - offset.x);
-            outRay->direction.y = (camera->lowerLeftCorner.y + u * camera->horizontal.y + v * camera->vertical.y - camera->origin.y - offset.y);
-            outRay->direction.z = (camera->lowerLeftCorner.z + u * camera->horizontal.z + v * camera->vertical.z - camera->origin.z - offset.z);
-            p_v3f_normalize(&outRay->direction, &outRay->direction);
         }
     }
 }

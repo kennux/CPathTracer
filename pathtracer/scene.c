@@ -130,17 +130,10 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
         return 0; // Outside of scene bounds
     */
 
-    // Pack ray
-    Vec3f_Pack packRayOrigin;
-    Vec3f_Pack packRayDir;
-    si_v_pack_s(&packRayOrigin, &ray->origin);
-    si_v_pack_s(&packRayDir, &ray->direction);
-
     // Prep packs
     Vec3f_Pack packOc;
-    AlignedFloatPack packB;
-    AlignedFloatPack packC;
-    Vec3f oc;
+    AlignedFloatPack packDot;
+    AlignedFloatPack packLen;
     mfloat b;
 
     // Spheres
@@ -148,14 +141,14 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
     for (size_t packIdx = 0; packIdx < spheres.oSphereIterationCount; packIdx++)
     {
         // origin-center
-        si_v_sub_pp(&packOc, &packRayOrigin, &spheres.oCenter[packIdx]);
+        si_v_sub_sp(&packOc, &ray->origin, &spheres.oCenter[packIdx]);
 
         // oc.direction
         // p_v3f_dot(&b, &oc, &ray->direction);
-        si_v_dot_pp(&packB, &packOc, &packRayDir);
+        si_v_dot_sp(&packDot, &ray->direction, &packOc);
 
         // p_v3f_lengthSq(&c, &oc);
-        si_v_lenSq_p(&packC, &packOc);
+        si_v_lenSq_p(&packLen, &packOc);
 
         size_t itStart = packIdx * SIMD_MATH_WIDTH;
         size_t itEnd = min(itStart+SIMD_MATH_WIDTH, spheres.sphereCount);
@@ -165,12 +158,12 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
             if (i >= itEnd)
                 break;
 
-            b = packB[instIdx];
+            b = packDot[instIdx];
             if (b > 0)
                 continue;
 
             // length sq of oc
-            mfloat c = packC[instIdx];
+            mfloat c = packLen[instIdx];
 
             bool hasHit = false;
             mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
