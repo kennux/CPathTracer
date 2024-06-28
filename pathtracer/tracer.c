@@ -167,7 +167,7 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
                     if (hits > 0 && hitInfo.matIdx < params.scene->materials.materialCount)
                     {
                         Vec3f attenuation;
-                        int scatter = material_Scatter(&hitInfo, &params.scene->materials, hitInfo.matIdx, &attenuation, &ray, &rand);
+                        int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &ray, rayCount, &rand);
                         p_v3f_mul_v3f(&localColor, &attenuation, &localColor);
 
                         if (scatter == 0)
@@ -179,10 +179,13 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
                     bounceCount++;
                 }
 
-                p_v3f_mul_f(&localColor, &localColor, invSamplesPerPixel);
+                localColor.x = fmin(1, localColor.x);
+                localColor.y = fmin(1, localColor.y);
+                localColor.z = fmin(1, localColor.z);
                 p_v3f_add_v3f(&color, &localColor, &color);
             }
 
+            p_v3f_mul_f(&color, &color, invSamplesPerPixel);
             backbuffer[colorIndex + 0] = color.x;
             backbuffer[colorIndex + 1] = color.y;
             backbuffer[colorIndex + 2] = color.z;

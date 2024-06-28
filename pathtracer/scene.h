@@ -48,10 +48,8 @@ typedef struct BakedScene
 {
     // Scene data
     BakedSpheres spheres;
-
-    // Bounding volume
-    Vec3f sceneBoundsMin;
-    Vec3f sceneBoundsMax;
+    size_t* emissiveSpheres;
+    size_t emissiveSphereCount;
 
     // Lighting data
     Vec3f ambientLight;

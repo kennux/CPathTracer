@@ -21,6 +21,7 @@ void bakedSpheres_Free(BakedSpheres* spheres)
 void bakedScene_Free(BakedScene* scene)
 {
     bakedSpheres_Free(&scene->spheres);
+    free(scene->emissiveSpheres);
     bakedMaterials_Free(&scene->materials);
 }
 
@@ -30,73 +31,96 @@ void scene_Free(Scene* scene)
     free(scene->spheres);
 }
 
-void scene_Bake(Scene* scene, BakedScene* baked)
+void _scene_BakeSpheres(BakedSpheres* baked, Sphere* spheres, Material* materials, size_t sphereCount, size_t materialCount)
 {
     // Bake spheres to SoA
-    baked->spheres.radiusSq = malloc(sizeof(mfloat) * scene->sphereCount);
-    baked->spheres.radiusReciprocal = malloc(sizeof(mfloat) * scene->sphereCount);
-    baked->spheres.radius = malloc(sizeof(mfloat) * scene->sphereCount);
-    baked->spheres.center = malloc(sizeof(Vec3f) * scene->sphereCount);
-    baked->spheres.boxMax = malloc(sizeof(Vec3f) * scene->sphereCount);
-    baked->spheres.boxMin = malloc(sizeof(Vec3f) * scene->sphereCount);
-    baked->spheres.matIdx = malloc(sizeof(size_t) * scene->sphereCount);
-    baked->spheres.sphereCount = scene->sphereCount;
-    baked->spheres.oSphereIterationCount = scene->sphereCount / SIMD_MATH_WIDTH;
-    if (baked->spheres.sphereCount % SIMD_MATH_WIDTH != 0)
-        baked->spheres.oSphereIterationCount++;
+    baked->radiusSq = malloc(sizeof(mfloat) * sphereCount);
+    baked->radiusReciprocal = malloc(sizeof(mfloat) * sphereCount);
+    baked->radius = malloc(sizeof(mfloat) * sphereCount);
+    baked->center = malloc(sizeof(Vec3f) * sphereCount);
+    baked->boxMax = malloc(sizeof(Vec3f) * sphereCount);
+    baked->boxMin = malloc(sizeof(Vec3f) * sphereCount);
+    baked->matIdx = malloc(sizeof(size_t) * sphereCount);
+    baked->sphereCount = sphereCount;
+    baked->oSphereIterationCount = sphereCount / SIMD_MATH_WIDTH;
+    if (baked->sphereCount % SIMD_MATH_WIDTH != 0)
+        baked->oSphereIterationCount++;
 
-    baked->spheres.oCenter = malloc(sizeof(Vec3f_Pack) * baked->spheres.oSphereIterationCount);
+    baked->oCenter = malloc(sizeof(Vec3f_Pack) * baked->oSphereIterationCount);
 
-    baked->sceneBoundsMin = vec3f(MFLOAT_MAX, MFLOAT_MAX, MFLOAT_MAX);
-    baked->sceneBoundsMax = vec3f(MFLOAT_MIN, MFLOAT_MIN, MFLOAT_MIN);
-    for (size_t i = 0; i < scene->sphereCount; i++)
+    for (size_t i = 0; i < sphereCount; i++)
     {
-        baked->spheres.radius[i] = scene->spheres[i].radius;
-        baked->spheres.radiusSq[i] = scene->spheres[i].radius * scene->spheres[i].radius;
-        baked->spheres.radiusReciprocal[i] = 1.0f / scene->spheres[i].radius;
-        baked->spheres.center[i] = scene->spheres[i].center;
-        baked->spheres.boxMax[i] = v3f_add_v3f(scene->spheres[i].center, vec3f(scene->spheres[i].radius, scene->spheres[i].radius, scene->spheres[i].radius));
-        baked->spheres.boxMin[i] = v3f_sub_v3f(scene->spheres[i].center, vec3f(scene->spheres[i].radius, scene->spheres[i].radius, scene->spheres[i].radius));
+        baked->radius[i] = spheres[i].radius;
+        baked->radiusSq[i] = spheres[i].radius * spheres[i].radius;
+        baked->radiusReciprocal[i] = 1.0f / spheres[i].radius;
+        baked->center[i] = spheres[i].center;
+        baked->boxMax[i] = v3f_add_v3f(spheres[i].center, vec3f(spheres[i].radius, spheres[i].radius, spheres[i].radius));
+        baked->boxMin[i] = v3f_sub_v3f(spheres[i].center, vec3f(spheres[i].radius, spheres[i].radius, spheres[i].radius));
 
         size_t matIdx = 0;
-        for (size_t j = 0; j < scene->materialCount; j++)
+        for (size_t j = 0; j < materialCount; j++)
         {
-            if (&scene->materials[j] == scene->spheres[i].material)
+            if (&materials[j] == spheres[i].material)
                 matIdx = j;
         }
-        baked->spheres.matIdx[i] = matIdx;
-
-        p_v3f_min(&baked->sceneBoundsMin, &baked->sceneBoundsMin, &baked->spheres.boxMin[i]);
-        p_v3f_max(&baked->sceneBoundsMax, &baked->sceneBoundsMax, &baked->spheres.boxMax[i]);
+        baked->matIdx[i] = matIdx;
     }
 
     // Clear prepass
-    for (size_t i = 0; i < baked->spheres.oSphereIterationCount; i++)
+    for (size_t i = 0; i < baked->oSphereIterationCount; i++)
     {
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
-            baked->spheres.oCenter[i].x[j] = 0;
-            baked->spheres.oCenter[i].y[j] = 0;
-            baked->spheres.oCenter[i].z[j] = 0;
+            baked->oCenter[i].x[j] = 0;
+            baked->oCenter[i].y[j] = 0;
+            baked->oCenter[i].z[j] = 0;
         }
     }
 
     size_t oSphereIdx = 0;
-    for (size_t i = 0; i < baked->spheres.oSphereIterationCount; i++)
+    for (size_t i = 0; i < baked->oSphereIterationCount; i++)
     {
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
             size_t mIdx = oSphereIdx + j;
 
-            if (mIdx < scene->sphereCount) {
-                baked->spheres.oCenter[i].x[j] = baked->spheres.center[mIdx].x;
-                baked->spheres.oCenter[i].y[j] = baked->spheres.center[mIdx].y;
-                baked->spheres.oCenter[i].z[j] = baked->spheres.center[mIdx].z;
+            if (mIdx < sphereCount) {
+                baked->oCenter[i].x[j] = baked->center[mIdx].x;
+                baked->oCenter[i].y[j] = baked->center[mIdx].y;
+                baked->oCenter[i].z[j] = baked->center[mIdx].z;
             }
         }
 
         oSphereIdx += SIMD_MATH_WIDTH;
     }
+}
+
+void scene_Bake(Scene* scene, BakedScene* baked)
+{
+    size_t emissiveSphereCount = 0;
+    for (size_t i = 0; i < scene->sphereCount; i++)
+    {
+        Vec3f emissive = scene->spheres[i].material->emissive;
+        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
+            emissiveSphereCount++;
+    }
+
+    size_t emissiveSphereIdx = 0;
+    size_t* emissiveSpheres = malloc(sizeof(size_t) * emissiveSphereCount);
+    for (size_t i = 0; i < scene->sphereCount; i++)
+    {
+        Vec3f emissive = scene->spheres[i].material->emissive;
+        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
+        {
+            emissiveSpheres[emissiveSphereIdx] = i;
+            emissiveSphereIdx++;
+        }
+    }
+
+    baked->emissiveSpheres = emissiveSpheres;
+    baked->emissiveSphereCount = emissiveSphereCount;
+
+    _scene_BakeSpheres(&baked->spheres, scene->spheres, scene->materials, scene->sphereCount, scene->materialCount);
 
     // Prep mats
     baked->materials = material_Bake(scene->materials, scene->materialCount);
@@ -180,6 +204,7 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
 
                     // Set material
                     localHitInfo.matIdx = spheres.matIdx[i];
+                    localHitInfo.hitObjectPtr = &spheres.center[i];
 
                     hasHit = true;
                 } else {
@@ -194,6 +219,7 @@ int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDi
 
                         // Set material
                         localHitInfo.matIdx = spheres.matIdx[i];
+                        localHitInfo.hitObjectPtr = &spheres.center[i];
 
                         hasHit = true;
                     }

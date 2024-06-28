@@ -53,8 +53,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 1280;
-    int textureHeight = 720;
+    int textureWidth = 640;
+    int textureHeight = 480;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
@@ -63,22 +63,29 @@ int main(void) {
     Scene scene;
 
     // Create materials
-    scene.materials = malloc(sizeof(Material) * 3);
-    scene.materialCount = 3;
+    scene.materials = malloc(sizeof(Material) * 4);
+    scene.materialCount = 4;
     Material* materialLambert1 = &scene.materials[0];
     materialLambert1->albedo = vec3f(0.8f, 0.4f, 0.4f);
+    materialLambert1->emissive = vec3f(0,0,0);
     materialLambert1->type = MaterialType_Lambert;
     Material* materialLambert2 = &scene.materials[1];
     materialLambert2->albedo = vec3f(0.8f, 0.8f, 0.8f);
+    materialLambert2->emissive = vec3f(0,0,0);
     materialLambert2->type = MaterialType_Lambert;
     Material* materialMetal = &scene.materials[2];
     materialMetal->albedo = vec3f(0.75f, 0.75f, 0.75f);
+    materialMetal->emissive = vec3f(0,0,0);
     materialMetal->roughness = 0.025f;
     materialMetal->type = MaterialType_Metal;
+    Material* emissiveMaterial = &scene.materials[3];
+    emissiveMaterial->albedo = vec3f(1, 1, 1);
+    emissiveMaterial->emissive = vec3f(0,30,0);
+    emissiveMaterial->type = MaterialType_Emissive;
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 58);
-    scene.sphereCount = 58;
+    scene.sphereCount = 8;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -110,7 +117,7 @@ int main(void) {
     editSphere = &scene.spheres[7];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0.5f, 1.25f, 0.5f);
-    editSphere->material = materialLambert1;
+    editSphere->material = emissiveMaterial;
 
     for (size_t i = 0; i < 50; i++)
     {
@@ -129,7 +136,8 @@ int main(void) {
     editSphere->materialLambert1 = materialLambert1;*/
 
     // Setup lighting
-    scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
+    // scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
+    scene.ambientLight = vec3f(0.25f, 0.25f, 0.25f);
 
     clock_t start = clock();
     BakedScene bakedScene;
@@ -143,14 +151,14 @@ int main(void) {
     params.backbufferWidth = textureWidth;
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
-    params.samplesPerPixel = 32;
+    params.samplesPerPixel = 256;
     params.camera = &cam;
     params.maxBounces = 6;
-    params.maxDepth = 10000;
+    params.maxDepth = 1000000;
 
     TraceTileParameters fullTileParams = singleTileTraceParams(params);
 
-    int tileSize = 16;
+    int tileSize = 24;
     size_t parallelTileCount = parallelTileTraceParams_TileCount(params, tileSize, tileSize);
     TraceTileParameters* parallelTileParams = malloc(sizeof(TraceTileParameters) * parallelTileCount);
     parallelTileTraceParams(params, tileSize, tileSize, parallelTileParams);
@@ -202,7 +210,7 @@ int main(void) {
 
     char tmpPath[512];
     sprintf((void*)&tmpPath, "%i.bmp", time(NULL));
-    // saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    //saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
     // Generate a texture

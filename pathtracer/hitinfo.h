@@ -9,4 +9,5 @@ typedef struct HitInfo
     float distance;
 
     size_t matIdx;
+    void* hitObjectPtr;
 } HitInfo;

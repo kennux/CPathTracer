@@ -1,19 +1,24 @@
 #pragma once
 
+#include <stdint.h>
 #include "ptmath.h"
 #include "random.h"
 #include "hitinfo.h"
 
+typedef struct BakedScene BakedScene;
+
 typedef enum MaterialType
 {
     MaterialType_Lambert,
-    MaterialType_Metal
+    MaterialType_Metal,
+    MaterialType_Emissive
 } MaterialType;
 
 typedef struct Material
 {
     MaterialType type;
     Vec3f albedo;
+    Vec3f emissive;
 
     // Metal
     mfloat roughness;
@@ -25,6 +30,7 @@ typedef struct BakedMaterials
 
     // Generic
     Vec3f* albedo;
+    Vec3f* emissive;
 
     // Metal
     mfloat* roughness;
@@ -32,7 +38,7 @@ typedef struct BakedMaterials
     size_t materialCount;
 } BakedMaterials;
 
-int material_Scatter(HitInfo* hitInfo, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, RandomState* random);
+int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Ray* ray, uint64_t* rayCount, RandomState* random);
 
 BakedMaterials material_Bake(Material* materials, size_t count);
 void bakedMaterials_Free(BakedMaterials* materials);
