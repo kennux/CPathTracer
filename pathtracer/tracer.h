@@ -34,5 +34,5 @@ TraceTileParameters singleTileTraceParams(TraceParameters params);
 void parallelTileTraceParams(TraceParameters params, int tileSizeX, int tileSizeY, TraceTileParameters* outTileParams);
 size_t parallelTileTraceParams_TileCount(TraceParameters params, int tileSizeX, int tileSizeY);
 
-void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount, progressCallbackFunc progressCallback);
-void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount);
+void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount, progressCallbackFunc progressCallback, size_t alreadyDoneIterationsOnBackbuffer, RandomState* rand);
+void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount, size_t alreadyDoneSamplesOnBackbuffer, RandomState* rand);

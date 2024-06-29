@@ -57,6 +57,9 @@ __declspec(align(16)) typedef struct Vec3f_Pack
     AlignedFloatPack z;
 } Vec3f_Pack;
 
+// Floats
+mfloat lerp(mfloat a, mfloat b, mfloat t);
+
 // Ray
 void p_ray_getPoint(Vec3f* point, Ray* ray, mfloat d);
 Vec3f ray_getPoint(Ray* ray, mfloat d);

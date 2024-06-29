@@ -63,7 +63,9 @@ typedef struct local_traceWorkerParams
 {
     TraceTileParameters* tiles;
     size_t tileCount;
+    size_t alreadyDoneIterationsOnBackbuffer;
     mfloat* backbuffer;
+    RandomState rndState;
 
     uint64_t* rayCount;
     LONG* jobPtr;
@@ -75,14 +77,14 @@ DWORD WINAPI local_traceWorker(LPVOID arg)
     LONG jobId = InterlockedAdd(params->jobPtr, 1);
     while (jobId < params->tileCount)
     {
-        traceTile(params->tiles[jobId], params->backbuffer, params->rayCount);
+        traceTile(params->tiles[jobId], params->backbuffer, params->rayCount, params->alreadyDoneIterationsOnBackbuffer, &params->rndState);
         jobId = InterlockedAdd(params->jobPtr, 1);
     }
 
     return 0;
 }
 
-void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount, progressCallbackFunc progressCallback)
+void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuffer, uint64_t* rayCount, int threadCount, progressCallbackFunc progressCallback, size_t alreadyDoneIterationsOnBackbuffer, RandomState* rand)
 {
     HANDLE* threads = malloc(threadCount * sizeof(HANDLE));
     uint64_t* rayCounts = malloc(threadCount * sizeof(uint64_t));
@@ -96,6 +98,9 @@ void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuf
         p.tiles = tiles;
         p.rayCount = &rayCounts[i];
         p.jobPtr = &jobPtr;
+        p.alreadyDoneIterationsOnBackbuffer = alreadyDoneIterationsOnBackbuffer;
+        xor_shift_32(rand);
+        p.rndState = (*rand & 0xFFFFFF);
 
         params[i] = p;
         threads[i] = CreateThread(NULL, 0, local_traceWorker, &params[i], 0, NULL);
@@ -141,14 +146,15 @@ Vec3f _composit(Vec3f* attens, Vec3f* emissions, Vec3f* light, Vec3f* ambient, s
     return out;
 }
 
-void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount)
+void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount, size_t alreadyDoneSamplesOnBackbuffer, RandomState* rand)
 {
     TraceParameters  params = tileParams.traceParams;
-    RandomState rand = time(NULL);
 
     mfloat invWidth = 1.0f / params.backbufferWidth;
     mfloat invHeight = 1.0f / params.backbufferHeight;
     mfloat invSamplesPerPixel = 1.0f / (mfloat)params.samplesPerPixel;
+    size_t totalSamples = alreadyDoneSamplesOnBackbuffer + params.samplesPerPixel;
+    mfloat lerpT = (mfloat)alreadyDoneSamplesOnBackbuffer / (mfloat)totalSamples;
 
     // RGB
     Vec3f color;
@@ -169,7 +175,7 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
             mfloat u = x * invWidth;
             int colorIndex = (yBackbufferIdx + x) * 4;
 
-            camera_GetRays(rays, params.samplesPerPixel, params.camera, u, v, &rand);
+            camera_GetRays(rays, params.samplesPerPixel, params.camera, u, v, rand);
             for (int r = 0; r < params.samplesPerPixel; r++)
             {
                 // Get ray
@@ -190,7 +196,7 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
                         Vec3f light = vec3f(0,0,0);
                         Vec3f emission = vec3f(0,0,0);
 
-                        int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &light, &emission, &ray, rayCount, &rand);
+                        int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &light, &emission, &ray, rayCount, rand);
 
                         Vec3f eAndL;
                         p_v3f_add_v3f(&eAndL, &light, &emission);
@@ -223,9 +229,16 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
             }
 
             p_v3f_mul_f(&color, &color, invSamplesPerPixel);
-            backbuffer[colorIndex + 0] = color.x;
-            backbuffer[colorIndex + 1] = color.y;
-            backbuffer[colorIndex + 2] = color.z;
+
+            // prev * lerpFac + col * (1-lerpFac);
+            backbuffer[colorIndex + 0] = backbuffer[colorIndex + 0] * lerpT + color.x * (1-lerpT);
+            backbuffer[colorIndex + 1] = backbuffer[colorIndex + 1] * lerpT + color.y * (1-lerpT);
+            backbuffer[colorIndex + 2] = backbuffer[colorIndex + 2] * lerpT + color.z * (1-lerpT);
+
+            /*
+            backbuffer[colorIndex + 0] = lerp(backbuffer[colorIndex + 0], color.x, lerpT);
+            backbuffer[colorIndex + 1] = lerp(backbuffer[colorIndex + 1], color.y, lerpT);
+            backbuffer[colorIndex + 2] = lerp(backbuffer[colorIndex + 2], color.z, lerpT);*/
             backbuffer[colorIndex + 3] = 1;
         }
     }
