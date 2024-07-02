@@ -57,14 +57,14 @@ Scene createScene()
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 59);
-    scene.sphereCount = 9;
+    scene.sphereCount = 7;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
     editSphere->material = materialLambert2;
     editSphere = &scene.spheres[1];
     editSphere->radius = 0.5f;
-    editSphere->center = vec3f(2, 0, -1);
+    editSphere->center = vec3f(-2, 0, 1);
     editSphere->material = materialLambert1;
     editSphere = &scene.spheres[2];
     editSphere->radius = 0.5f;
@@ -84,16 +84,16 @@ Scene createScene()
     editSphere->material = materialLambert1;
     editSphere = &scene.spheres[6];
     editSphere->radius = 0.5f;
-    editSphere->center = vec3f(-2, 0, 1);
-    editSphere->material = materialLambert1;
+    editSphere->center = vec3f(0.25f, 1.f, 0);
+    editSphere->material = materialDielectric;
     editSphere = &scene.spheres[7];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0, 2.25f, 0.5f);
     editSphere->material = materialEmissive;
     editSphere = &scene.spheres[8];
     editSphere->radius = 0.5f;
-    editSphere->center = vec3f(0.25f, 1.f, 0);
-    editSphere->material = materialDielectric;
+    editSphere->center = vec3f(2, 0, -1);
+    editSphere->material = materialLambert1;
 
     for (size_t i = 0; i < 50; i++)
     {
@@ -107,9 +107,18 @@ Scene createScene()
         editSphere->center = vec3f(x, 0, z);
         editSphere->material = i % 2 == 0 ? materialLambert1 : materialMetal;
     }
-    /*editSphere->radius = 100;
-    editSphere->center = vec3f(0, -100.5f, -1);
-    editSphere->materialLambert1 = materialLambert1;*/
+
+    // Create boxes
+    scene.boxes = malloc(sizeof(Box) * 2);
+    scene.boxCount = 2;
+    Box* editBox = &scene.boxes[0];
+    editBox->center = vec3f(0, 2.f, 0.5f);
+    editBox->halfSize = vec3f(.25f, .25f, .25f);
+    editBox->material = materialEmissive;
+    editBox = &scene.boxes[1];
+    editBox->center = vec3f(2, .5f, -1);
+    editBox->halfSize = vec3f(.5f, .5f, .5f);
+    editBox->material = materialLambert1;
 
     // Setup lighting
     scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
@@ -165,8 +174,8 @@ void transformBackbufferToBmpData(mfloat* backbufferData, char* bmpData, size_t 
     }
 }
 
-#define INITIAL_SAMPLES 8
-#define SAMPLES_PER_ITERATION 8
+#define INITIAL_SAMPLES 16
+#define SAMPLES_PER_ITERATION 16
 
 int main(void) {
     GLFWwindow* window;
@@ -195,8 +204,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 2560;
-    int textureHeight = 1440;
+    int textureWidth = 1920;
+    int textureHeight = 1080;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);

@@ -3,14 +3,6 @@
 #include "hitinfo.h"
 #include "material.h"
 
-typedef struct Sphere
-{
-    Vec3f center;
-    mfloat radius;
-
-    Material* material;
-} Sphere;
-
 typedef struct BakedSpheres
 {
     Vec3f* center;
@@ -30,10 +22,46 @@ typedef struct BakedSpheres
     size_t oSphereIterationCount;
 } BakedSpheres;
 
+typedef struct BakedBoxes
+{
+    Vec3f* min;
+    Vec3f* max;
+    Vec3f* center;
+    Vec3f* halfSize;
+
+    Vec3f_Pack* oMin;
+    Vec3f_Pack* oMax;
+    Vec3f_Pack* oCenter;
+    Vec3f_Pack* oHalfSize;
+
+    size_t* matIdx;
+
+    size_t boxCount;
+    size_t oBoxIterationCount;
+} BakedBoxes;
+
+typedef struct Box
+{
+    Vec3f center;
+    Vec3f halfSize;
+
+    Material *material;
+} Box;
+
+typedef struct Sphere
+{
+    Vec3f center;
+    mfloat radius;
+
+    Material* material;
+} Sphere;
+
 typedef struct Scene
 {
     // Scene data
     Sphere* spheres;
+    Box* boxes;
+    size_t boxCount;
     size_t sphereCount;
 
     // Lighting data
@@ -51,6 +79,10 @@ typedef struct BakedScene
     size_t* emissiveSpheres;
     size_t emissiveSphereCount;
 
+    BakedBoxes boxes;
+    size_t* emissiveBoxes;
+    size_t emissiveBoxCount;
+
     // Lighting data
     Vec3f ambientLight;
 
@@ -59,7 +91,6 @@ typedef struct BakedScene
 } BakedScene;
 
 void scene_Free(Scene* scene);
-void bakedSpheres_Free(BakedSpheres* spheres);
 void bakedScene_Free(BakedScene* scene);
 
 void scene_Bake(Scene* scene, BakedScene* baked);

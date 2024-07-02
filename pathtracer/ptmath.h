@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <float.h>
 #include <math.h>
 
@@ -8,6 +9,16 @@
 #define MFLOAT_MAX FLT_MAX
 
 #define EXPLICIT_SIMD
+
+#if defined(__clang__) || defined(__GNUC__)
+#define THREAD_LOCAL __thread
+#define SIMD_ALIGN __attribute__((aligned(32)))
+#elif defined(_MSC_VER)
+#define THREAD_LOCAL __declspec(thread)
+#define SIMD_ALIGN __declspec(align(32))
+#else
+#error "Unsupported compiler"
+#endif
 
 #ifdef EXPLICIT_SIMD
     #ifdef __AVX__
@@ -41,15 +52,15 @@ typedef struct Ray
 } Ray;
 
 #if SIMD_MATH_WIDTH == 8
-typedef mfloat AlignedFloatPack[8] __attribute__((aligned(32)));
+SIMD_ALIGN typedef float AlignedFloatPack[8];
 #elif SIMD_MATH_WIDTH == 4
-typedef mfloat AlignedFloatPack[8] __attribute__((aligned(16)));
+SIMD_ALIGN typedef float AlignedFloatPack[4];
 #endif
 
 #if SIMD_MATH_WIDTH == 8
-__declspec(align(32)) typedef struct Vec3f_Pack
+SIMD_ALIGN typedef struct Vec3f_Pack
 #elif SIMD_MATH_WIDTH == 4
-__declspec(align(16)) typedef struct Vec3f_Pack
+SIMD_ALIGN typedef struct Vec3f_Pack
 #endif
 {
     AlignedFloatPack x;

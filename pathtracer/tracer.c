@@ -127,25 +127,6 @@ void traceParallel(TraceTileParameters* tiles, size_t tileCount, mfloat* backbuf
     free(params);
 }
 
-Vec3f _composit(Vec3f* attens, Vec3f* emissions, Vec3f* light, Vec3f* ambient, size_t idx, size_t count)
-{
-    if (idx >= count)
-        return *ambient; // End reached
-
-    // Emission + light
-    Vec3f out;
-    p_v3f_add_v3f(&out, &emissions[idx], &light[idx]);
-
-    // (Emission + Light) + Atten * Recursion
-    Vec3f next = _composit(attens, emissions, light, ambient, idx + 1, count);
-
-    Vec3f attenMul;
-    p_v3f_mul_v3f(&attenMul, &attens[idx], &next);
-
-    p_v3f_add_v3f(&out, &out, &attenMul);
-    return out;
-}
-
 void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* rayCount, size_t alreadyDoneSamplesOnBackbuffer, RandomState* rand)
 {
     TraceParameters  params = tileParams.traceParams;
@@ -235,10 +216,6 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
             backbuffer[colorIndex + 1] = backbuffer[colorIndex + 1] * lerpT + color.y * (1-lerpT);
             backbuffer[colorIndex + 2] = backbuffer[colorIndex + 2] * lerpT + color.z * (1-lerpT);
 
-            /*
-            backbuffer[colorIndex + 0] = lerp(backbuffer[colorIndex + 0], color.x, lerpT);
-            backbuffer[colorIndex + 1] = lerp(backbuffer[colorIndex + 1], color.y, lerpT);
-            backbuffer[colorIndex + 2] = lerp(backbuffer[colorIndex + 2], color.z, lerpT);*/
             backbuffer[colorIndex + 3] = 1;
         }
     }

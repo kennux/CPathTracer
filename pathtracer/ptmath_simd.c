@@ -1,8 +1,8 @@
 #include "ptmath.h"
 #include <immintrin.h>
 
-__attribute__((aligned(32))) __declspec( thread ) static Vec3f_Pack tmpVec;
-__attribute__((aligned(32))) __declspec( thread ) static AlignedFloatPack tmpFloats;
+THREAD_LOCAL SIMD_ALIGN static Vec3f_Pack tmpVec;
+THREAD_LOCAL SIMD_ALIGN static AlignedFloatPack tmpFloats;
 
 void si_v_pack_s(Vec3f_Pack* out, Vec3f* vec)
 {
