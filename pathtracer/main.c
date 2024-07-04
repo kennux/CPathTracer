@@ -31,8 +31,8 @@ Scene createScene()
     Scene scene;
 
     // Create materials
-    scene.materials = malloc(sizeof(Material) * 5);
-    scene.materialCount = 5;
+    scene.materials = malloc(sizeof(Material) * 6);
+    scene.materialCount = 6;
     Material* materialLambert1 = &scene.materials[0];
     materialLambert1->albedo = vec3f(0.8f, 0.4f, 0.4f);
     materialLambert1->emissive = vec3f(0,0,0);
@@ -54,10 +54,15 @@ Scene createScene()
     materialDielectric->albedo = vec3f(1, 1, 1);
     materialDielectric->ri = 1.5;
     materialDielectric->type = MaterialType_Dielectric;
+    Material* materialMetal2 = &scene.materials[5];
+    materialMetal2->albedo = vec3f(0.75f, 0.75f, 0.75f);
+    materialMetal2->emissive = vec3f(0,0,0);
+    materialMetal2->roughness = 0.75f;
+    materialMetal2->type = MaterialType_Metal;
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 59);
-    scene.sphereCount = 7;
+    scene.sphereCount = 8;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -77,7 +82,7 @@ Scene createScene()
     editSphere = &scene.spheres[4];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(2, 0, 1);
-    editSphere->material = materialLambert1;
+    editSphere->material = materialMetal2;
     editSphere = &scene.spheres[5];
     editSphere->radius = 0.5f;
     editSphere->center = vec3f(0, 0, 1);
@@ -110,15 +115,15 @@ Scene createScene()
 
     // Create boxes
     scene.boxes = malloc(sizeof(Box) * 2);
-    scene.boxCount = 2;
+    scene.boxCount = 1;
     Box* editBox = &scene.boxes[0];
-    editBox->center = vec3f(0, 2.f, 0.5f);
-    editBox->halfSize = vec3f(.25f, .25f, .25f);
-    editBox->material = materialEmissive;
-    editBox = &scene.boxes[1];
     editBox->center = vec3f(2, .5f, -1);
     editBox->halfSize = vec3f(.5f, .5f, .5f);
     editBox->material = materialLambert1;
+    editBox = &scene.boxes[1];
+    editBox->center = vec3f(0, 2.f, 0.5f);
+    editBox->halfSize = vec3f(.25f, .25f, .25f);
+    editBox->material = materialEmissive;
 
     // Setup lighting
     scene.ambientLight = vec3f(0.75f, 0.75f, 0.75f);
@@ -174,8 +179,10 @@ void transformBackbufferToBmpData(mfloat* backbufferData, char* bmpData, size_t 
     }
 }
 
-#define INITIAL_SAMPLES 16
-#define SAMPLES_PER_ITERATION 16
+#define INITIAL_SAMPLES 32
+#define SAMPLES_PER_ITERATION 32
+#define WIDTH 1920
+#define HEIGHT 1080
 
 int main(void) {
     GLFWwindow* window;
@@ -191,7 +198,7 @@ int main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    window = glfwCreateWindow(640, 480, "CPathTracer", NULL, NULL);
+    window = glfwCreateWindow(1280, 720, "CPathTracer", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
@@ -204,8 +211,8 @@ int main(void) {
     glClearColor(0, 0, 0, 0.0f);
 
     // Backbuffer
-    int textureWidth = 1920;
-    int textureHeight = 1080;
+    int textureWidth = WIDTH;
+    int textureHeight = HEIGHT;
     mfloat* backbufferData = malloc(textureWidth*textureHeight*4*sizeof(mfloat));
 
     Camera cam = camera_Construct(vec3f(0,2,3), vec3f(0,0,0), vec3f(0,1,0), 70, (float)textureWidth / (float)textureHeight, 0.025f, 3.0f);
