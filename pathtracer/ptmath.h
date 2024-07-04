@@ -90,6 +90,7 @@ void p_v3f_reflect(Vec3f* out, Vec3f* vec, Vec3f* normal);
 bool p_v3f_refract(Vec3f* out, Vec3f* vec, Vec3f* normal, mfloat refractionIdxRatio);
 void p_v3f_min(Vec3f *out, Vec3f* v0, Vec3f* v1);
 void p_v3f_max(Vec3f *out, Vec3f* v0, Vec3f* v1);
+void p_v3f_clamp01(Vec3f* out, Vec3f* v0);
 
 Vec3f vec3f(mfloat x, mfloat y, mfloat z);
 Vec3f v3f_add_v3f(Vec3f v0, Vec3f v1);
@@ -104,6 +105,7 @@ mfloat v3f_dot(Vec3f v0, Vec3f v1);
 Vec3f v3f_reflect(Vec3f vec, Vec3f normal);
 Vec3f v3f_min(Vec3f v0, Vec3f v1);
 Vec3f v3f_max(Vec3f v0, Vec3f v1);
+Vec3f v3f_clamp01(Vec3f v0);
 
 // si_ = SIMD
 // - f_ = Float

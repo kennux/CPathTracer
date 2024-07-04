@@ -211,6 +211,8 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
 
             p_v3f_mul_f(&color, &color, invSamplesPerPixel);
 
+            p_v3f_clamp01(&color, &color);
+
             // prev * lerpFac + col * (1-lerpFac);
             backbuffer[colorIndex + 0] = backbuffer[colorIndex + 0] * lerpT + color.x * (1-lerpT);
             backbuffer[colorIndex + 1] = backbuffer[colorIndex + 1] * lerpT + color.y * (1-lerpT);

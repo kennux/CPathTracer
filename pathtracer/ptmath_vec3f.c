@@ -122,6 +122,19 @@ void p_v3f_max(Vec3f *out, Vec3f* v0, Vec3f* v1)
     out->z = fmaxf(v0->z, v1->z);
 }
 
+void p_v3f_clamp01(Vec3f* out, Vec3f* v0)
+{
+    out->x = out->x > 1 ? 1 : (out->x < 0 ? 0 : out->x);
+    out->y = out->y > 1 ? 1 : (out->y < 0 ? 0 : out->y);
+    out->z = out->z > 1 ? 1 : (out->z < 0 ? 0 : out->z);
+}
+
+Vec3f v3f_clamp01(Vec3f v0)
+{
+    Vec3f v;
+    p_v3f_clamp01(&v, &v0);
+    return v;
+}
 Vec3f vec3f(mfloat x, mfloat y, mfloat z)
 {
     Vec3f v;
