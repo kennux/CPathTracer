@@ -168,7 +168,6 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
 
             mfloat c = packLen[instIdx];
 
-            bool hasHit = false;
             mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
             // mfloat discriminantSqr = packDiscriminantSqr[instIdx]; // b * b - (c - spheres.radiusSq[i]);
             if (discriminantSqr > 0) {
@@ -195,11 +194,6 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
                     _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
                     hitCount++;
                 }
-            }
-
-            if (hasHit) {
-                _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
-                hitCount++;
             }
         }
     }
