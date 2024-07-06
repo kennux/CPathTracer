@@ -62,7 +62,7 @@ Scene createScene()
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 59);
-    scene.sphereCount = 8;
+    scene.sphereCount = 59;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -115,7 +115,7 @@ Scene createScene()
 
     // Create boxes
     scene.boxes = malloc(sizeof(Box) * 2);
-    scene.boxCount = 1;
+    scene.boxCount = 0;
     Box* editBox = &scene.boxes[0];
     editBox->center = vec3f(2, .5f, -1);
     editBox->halfSize = vec3f(.5f, .5f, .5f);
@@ -181,8 +181,8 @@ void transformBackbufferToBmpData(mfloat* backbufferData, char* bmpData, size_t 
 
 #define INITIAL_SAMPLES 32
 #define SAMPLES_PER_ITERATION 32
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 640
+#define HEIGHT 480
 
 int main(void) {
     GLFWwindow* window;

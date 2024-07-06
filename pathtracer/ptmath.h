@@ -36,16 +36,16 @@
     #define SIMD 0
 #endif
 
-typedef float mfloat;
+SIMD_ALIGN typedef float mfloat;
 
-typedef struct Vec3f
+SIMD_ALIGN typedef struct Vec3f
 {
     mfloat x;
     mfloat y;
     mfloat z;
 } Vec3f;
 
-typedef struct Ray
+SIMD_ALIGN typedef struct Ray
 {
     Vec3f origin;
     Vec3f direction;
@@ -57,16 +57,24 @@ SIMD_ALIGN typedef float AlignedFloatPack[8];
 SIMD_ALIGN typedef float AlignedFloatPack[4];
 #endif
 
-#if SIMD_MATH_WIDTH == 8
 SIMD_ALIGN typedef struct Vec3f_Pack
-#elif SIMD_MATH_WIDTH == 4
-SIMD_ALIGN typedef struct Vec3f_Pack
-#endif
 {
     AlignedFloatPack x;
     AlignedFloatPack y;
     AlignedFloatPack z;
 } Vec3f_Pack;
+
+SIMD_ALIGN typedef struct Vec3f_SoA
+{
+    SIMD_ALIGN mfloat* x;
+    SIMD_ALIGN mfloat* y;
+    SIMD_ALIGN mfloat* z;
+} Vec3f_SoA;
+
+// SoA Data handling
+void p_vec3f_soa(Vec3f_SoA* result, size_t size);
+void p_vec3f_soa_fill(Vec3f_SoA* soa, Vec3f* source, size_t size);
+void p_vec3f_soa_destroy(Vec3f_SoA* soa);
 
 // Floats
 mfloat lerp(mfloat a, mfloat b, mfloat t);
@@ -108,28 +116,37 @@ Vec3f v3f_max(Vec3f v0, Vec3f v1);
 Vec3f v3f_clamp01(Vec3f v0);
 
 // si_ = SIMD
+// sip = SIMD Packed
 // - f_ = Float
 // - v_ = Vector
 // mul/add/... = Operation
 // - s = Single
 // - p = Pack
 
-void si_f_mul_pp(mfloat* result, mfloat* pack1, mfloat* pack2);
-void si_f_mul_ps(mfloat* result, mfloat* pack1, mfloat val);
+void sip_f_mul_pp(mfloat* result, mfloat* pack1, mfloat* pack2);
+void sip_f_mul_ps(mfloat* result, mfloat* pack1, mfloat val);
 
-void si_v_pack_s(Vec3f_Pack* out, Vec3f* vec);
-void si_v_extract_s(Vec3f_Pack* pack, Vec3f* out, size_t idx);
-void si_v_sub_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void si_v_sub_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
-void si_v_add_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void si_v_add_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
-void si_v_mul_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void si_v_mul_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
-void si_v_dot_pp(mfloat* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
-void si_v_dot_sp(mfloat* result, Vec3f* v0, Vec3f_Pack* v1);
-void si_v_lenSq_p(mfloat* result, Vec3f_Pack* v0);
-void si_vf_add_pp(Vec3f_Pack* result, Vec3f_Pack* v0, mfloat* pack1);
-void si_vf_add_sp(Vec3f_Pack* result, Vec3f* v0, mfloat* pack1);
-void si_v_sumComps_p(mfloat *result, Vec3f_Pack *v0);
-void si_v_normalizeUnsafe_p(Vec3f_Pack* result, Vec3f_Pack *v0);
-void si_v_normalize_p(Vec3f_Pack* result, Vec3f_Pack *v0);
+void si_v_sub_sp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z);
+void si_v_lenSq_p(mfloat* result, mfloat* v0x, mfloat* v0y, mfloat* v0z);
+void si_v_dot_sp(mfloat* result, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z);
+void si_v_dot_pp(mfloat* result, mfloat* v0x, mfloat* v0y, mfloat* v0z, mfloat* v1x, mfloat* v1y, mfloat* v1z);
+void si_v_mul_pp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, mfloat* v0x, mfloat* v0y, mfloat* v0z, mfloat* v1x, mfloat* v1y, mfloat* v1z);
+void si_v_mul_sp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z);
+void si_v_sumComps_p(mfloat *result, mfloat* v0x, mfloat* v0y, mfloat* v0z);
+
+void sip_v_pack_s(Vec3f_Pack* out, Vec3f* vec);
+void sip_v_extract_s(Vec3f_Pack* pack, Vec3f* out, size_t idx);
+void sip_v_sub_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sip_v_sub_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
+void sip_v_add_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sip_v_add_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
+void sip_v_mul_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sip_v_mul_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1);
+void sip_v_dot_pp(mfloat* result, Vec3f_Pack* v0, Vec3f_Pack* v1);
+void sip_v_dot_sp(mfloat* result, Vec3f* v0, Vec3f_Pack* v1);
+void sip_v_lenSq_p(mfloat* result, Vec3f_Pack* v0);
+void sip_vf_add_pp(Vec3f_Pack* result, Vec3f_Pack* v0, mfloat* pack1);
+void sip_vf_add_sp(Vec3f_Pack* result, Vec3f* v0, mfloat* pack1);
+void sip_v_sumComps_p(mfloat *result, Vec3f_Pack *v0);
+void sip_v_normalizeUnsafe_p(Vec3f_Pack* result, Vec3f_Pack *v0);
+void sip_v_normalize_p(Vec3f_Pack* result, Vec3f_Pack *v0);

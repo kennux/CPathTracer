@@ -12,6 +12,7 @@ void bakedSpheres_Free(BakedSpheres* spheres)
     free(spheres->radiusSq);
     free(spheres->boxMax);
     free(spheres->boxMin);
+    p_vec3f_soa_destroy(&spheres->soaCenter);
 }
 
 void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materials, size_t sphereCount, size_t materialCount)
@@ -25,11 +26,12 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
     baked->boxMin = malloc(sizeof(Vec3f) * sphereCount);
     baked->matIdx = malloc(sizeof(size_t) * sphereCount);
     baked->sphereCount = sphereCount;
-    baked->oSphereIterationCount = sphereCount / SIMD_MATH_WIDTH;
+    baked->pSphereIterationCount = sphereCount / SIMD_MATH_WIDTH;
     if (baked->sphereCount % SIMD_MATH_WIDTH != 0)
-        baked->oSphereIterationCount++;
+        baked->pSphereIterationCount++;
 
-    baked->oCenter = malloc(sizeof(Vec3f_Pack) * baked->oSphereIterationCount);
+    baked->pCenter = malloc(sizeof(Vec3f_Pack) * baked->pSphereIterationCount);
+    p_vec3f_soa(&baked->soaCenter, baked->pSphereIterationCount * SIMD_MATH_WIDTH);
 
     for (size_t i = 0; i < sphereCount; i++)
     {
@@ -48,29 +50,30 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
         }
         baked->matIdx[i] = matIdx;
     }
+    p_vec3f_soa_fill(&baked->soaCenter, baked->center, baked->sphereCount);
 
     // Clear prepass
-    for (size_t i = 0; i < baked->oSphereIterationCount; i++)
+    for (size_t i = 0; i < baked->pSphereIterationCount; i++)
     {
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
-            baked->oCenter[i].x[j] = 0;
-            baked->oCenter[i].y[j] = 0;
-            baked->oCenter[i].z[j] = 0;
+            baked->pCenter[i].x[j] = 0;
+            baked->pCenter[i].y[j] = 0;
+            baked->pCenter[i].z[j] = 0;
         }
     }
 
     size_t oSphereIdx = 0;
-    for (size_t i = 0; i < baked->oSphereIterationCount; i++)
+    for (size_t i = 0; i < baked->pSphereIterationCount; i++)
     {
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
             size_t mIdx = oSphereIdx + j;
 
             if (mIdx < sphereCount) {
-                baked->oCenter[i].x[j] = baked->center[mIdx].x;
-                baked->oCenter[i].y[j] = baked->center[mIdx].y;
-                baked->oCenter[i].z[j] = baked->center[mIdx].z;
+                baked->pCenter[i].x[j] = baked->center[mIdx].x;
+                baked->pCenter[i].y[j] = baked->center[mIdx].y;
+                baked->pCenter[i].z[j] = baked->center[mIdx].z;
             }
         }
 
@@ -112,24 +115,25 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
     HitInfo localHitInfo;
 
     // Prep packs
-    Vec3f_Pack packOc;
-    AlignedFloatPack packDot;
-    AlignedFloatPack packLen;
-    mfloat b;
+    SIMD_ALIGN Vec3f_Pack packOc;
+    SIMD_ALIGN AlignedFloatPack packDot;
+    SIMD_ALIGN AlignedFloatPack packLen;
+    SIMD_ALIGN mfloat b;
 
     // Spheres
     BakedSpheres spheres = scene->spheres;
-    for (size_t packIdx = 0; packIdx < spheres.oSphereIterationCount; packIdx++)
+    for (size_t packIdx = 0; packIdx < spheres.pSphereIterationCount; packIdx++)
     {
         // origin-center
-        si_v_sub_sp(&packOc, &ray->origin, &spheres.oCenter[packIdx]);
+        si_v_sub_sp(&packOc.x, &packOc.y, &packOc.z, &ray->origin,
+                    &spheres.soaCenter.x[packIdx * SIMD_MATH_WIDTH], &spheres.soaCenter.y[packIdx * SIMD_MATH_WIDTH], &spheres.soaCenter.z[packIdx * SIMD_MATH_WIDTH]);
 
         // oc.direction
         // p_v3f_dot(&b, &oc, &ray->direction);
-        si_v_dot_sp(&packDot, &ray->direction, &packOc);
+        si_v_dot_sp(&packDot, &ray->direction, &packOc.x, &packOc.y, &packOc.z);
 
         // p_v3f_lengthSq(&c, &oc);
-        si_v_lenSq_p(&packLen, &packOc);
+        si_v_lenSq_p(&packLen, &packOc.x, &packOc.y, &packOc.z);
 
         size_t itStart = packIdx * SIMD_MATH_WIDTH;
         size_t itEnd = min(itStart+SIMD_MATH_WIDTH, spheres.sphereCount);

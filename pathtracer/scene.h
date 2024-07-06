@@ -14,12 +14,13 @@ typedef struct BakedSpheres
     Vec3f* boxMax;
 
     // Optimized memory access copies
-    Vec3f_Pack* oCenter;
+    Vec3f_Pack* pCenter;
+    Vec3f_SoA soaCenter;
 
     size_t* matIdx;
 
     size_t sphereCount;
-    size_t oSphereIterationCount;
+    size_t pSphereIterationCount;
 } BakedSpheres;
 
 typedef struct BakedBoxes
@@ -29,15 +30,15 @@ typedef struct BakedBoxes
     Vec3f* center;
     Vec3f* halfSize;
 
-    Vec3f_Pack* oMin;
-    Vec3f_Pack* oMax;
-    Vec3f_Pack* oCenter;
-    Vec3f_Pack* oHalfSize;
+    Vec3f_Pack* pMin;
+    Vec3f_Pack* pMax;
+    Vec3f_Pack* pCenter;
+    Vec3f_Pack* pHalfSize;
 
     size_t* matIdx;
 
     size_t boxCount;
-    size_t oBoxIterationCount;
+    size_t pBoxIterationCount;
 } BakedBoxes;
 
 typedef struct Box

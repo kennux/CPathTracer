@@ -21,7 +21,7 @@ void random_packInUnitDisk(Vec3f_Pack* out, RandomState* state)
         out->z[0] = 0;
     }
 
-    si_v_normalize_p(out, out);
+    sip_v_normalize_p(out, out);
 }
 
 void random_inUnitDisk(Vec3f* out, RandomState* state)

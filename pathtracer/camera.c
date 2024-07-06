@@ -53,23 +53,23 @@ void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, floa
         random_packInUnitDisk(&randomVec, rndState);
 
         // rndMulLens = vecX|vecY * lensRadius
-        si_f_mul_ps(&rndMulLensU, &randomVec.x, camera->lensRadius);
-        si_f_mul_ps(&rndMulLensV, &randomVec.y, camera->lensRadius);
+        sip_f_mul_ps(&rndMulLensU, &randomVec.x, camera->lensRadius);
+        sip_f_mul_ps(&rndMulLensV, &randomVec.y, camera->lensRadius);
 
         // u|v * rndMulLens
-        si_vf_add_sp(&packOffset1, &camera->u, &rndMulLensU);
-        si_vf_add_sp(&packOffset2, &camera->v, &rndMulLensV);
+        sip_vf_add_sp(&packOffset1, &camera->u, &rndMulLensU);
+        sip_vf_add_sp(&packOffset2, &camera->v, &rndMulLensV);
 
         // offset = offset1 + offset2
-        si_v_add_pp(&packOffset, &packOffset1, &packOffset2);
+        sip_v_add_pp(&packOffset, &packOffset1, &packOffset2);
 
         // rayOrigin = camOrigin + offset
-        si_v_add_sp(&packRayOrigin, &camera->origin, &packOffset);
+        sip_v_add_sp(&packRayOrigin, &camera->origin, &packOffset);
 
         // rayDirBase - offset
-        si_v_sub_sp(&packRayDir, &rayDirBase, &packOffset);
+        sip_v_sub_sp(&packRayDir, &rayDirBase, &packOffset);
 
-        si_v_normalizeUnsafe_p(&packRayDir, &packRayDir);
+        sip_v_normalizeUnsafe_p(&packRayDir, &packRayDir);
 
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
@@ -80,8 +80,8 @@ void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, floa
 
             Ray* outRay = &outRays[rayIdx];
 
-            si_v_extract_s(&packRayDir, &outRay->direction, j);
-            si_v_extract_s(&packRayOrigin, &outRay->origin, j);
+            sip_v_extract_s(&packRayDir, &outRay->direction, j);
+            sip_v_extract_s(&packRayOrigin, &outRay->origin, j);
         }
     }
 }

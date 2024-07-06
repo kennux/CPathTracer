@@ -8,10 +8,10 @@ void bakedBoxes_Free(BakedBoxes* boxes)
     free(boxes->min);
     free(boxes->center);
     free(boxes->halfSize);
-    free(boxes->oMax);
-    free(boxes->oMin);
-    free(boxes->oCenter);
-    free(boxes->oHalfSize);
+    free(boxes->pMax);
+    free(boxes->pMin);
+    free(boxes->pCenter);
+    free(boxes->pHalfSize);
 }
 
 void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_t boxCount, size_t materialCount)
@@ -22,14 +22,14 @@ void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_
     baked->halfSize = malloc(sizeof(Vec3f) * boxCount);
     baked->matIdx = malloc(sizeof(size_t) * boxCount);
     baked->boxCount = boxCount;
-    baked->oBoxIterationCount = boxCount / SIMD_MATH_WIDTH;
+    baked->pBoxIterationCount = boxCount / SIMD_MATH_WIDTH;
     if (baked->boxCount % SIMD_MATH_WIDTH != 0)
-        baked->oBoxIterationCount++;
+        baked->pBoxIterationCount++;
 
-    baked->oMax = malloc(sizeof(Vec3f_Pack) * baked->oBoxIterationCount);
-    baked->oMin = malloc(sizeof(Vec3f_Pack) * baked->oBoxIterationCount);
-    baked->oCenter = malloc(sizeof(Vec3f_Pack) * baked->oBoxIterationCount);
-    baked->oHalfSize = malloc(sizeof(Vec3f_Pack) * baked->oBoxIterationCount);
+    baked->pMax = malloc(sizeof(Vec3f_Pack) * baked->pBoxIterationCount);
+    baked->pMin = malloc(sizeof(Vec3f_Pack) * baked->pBoxIterationCount);
+    baked->pCenter = malloc(sizeof(Vec3f_Pack) * baked->pBoxIterationCount);
+    baked->pHalfSize = malloc(sizeof(Vec3f_Pack) * baked->pBoxIterationCount);
 
     for (size_t i = 0; i < boxCount; i++)
     {
@@ -54,45 +54,45 @@ void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_
     }
 
     // Clear prepass
-    for (size_t i = 0; i < baked->oBoxIterationCount; i++)
+    for (size_t i = 0; i < baked->pBoxIterationCount; i++)
     {
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
-            baked->oMax[i].x[j] = 0;
-            baked->oMax[i].y[j] = 0;
-            baked->oMax[i].z[j] = 0;
-            baked->oMin[i].x[j] = 0;
-            baked->oMin[i].y[j] = 0;
-            baked->oMin[i].z[j] = 0;
-            baked->oCenter[i].x[j] = 0;
-            baked->oCenter[i].y[j] = 0;
-            baked->oCenter[i].z[j] = 0;
-            baked->oHalfSize[i].x[j] = 0;
-            baked->oHalfSize[i].y[j] = 0;
-            baked->oHalfSize[i].z[j] = 0;
+            baked->pMax[i].x[j] = 0;
+            baked->pMax[i].y[j] = 0;
+            baked->pMax[i].z[j] = 0;
+            baked->pMin[i].x[j] = 0;
+            baked->pMin[i].y[j] = 0;
+            baked->pMin[i].z[j] = 0;
+            baked->pCenter[i].x[j] = 0;
+            baked->pCenter[i].y[j] = 0;
+            baked->pCenter[i].z[j] = 0;
+            baked->pHalfSize[i].x[j] = 0;
+            baked->pHalfSize[i].y[j] = 0;
+            baked->pHalfSize[i].z[j] = 0;
         }
     }
 
     size_t oBoxIdx = 0;
-    for (size_t i = 0; i < baked->oBoxIterationCount; i++)
+    for (size_t i = 0; i < baked->pBoxIterationCount; i++)
     {
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
             size_t mIdx = oBoxIdx + j;
 
             if (mIdx < boxCount) {
-                baked->oMin[i].x[j] = baked->min[mIdx].x;
-                baked->oMin[i].y[j] = baked->min[mIdx].y;
-                baked->oMin[i].z[j] = baked->min[mIdx].z;
-                baked->oMax[i].x[j] = baked->max[mIdx].x;
-                baked->oMax[i].y[j] = baked->max[mIdx].y;
-                baked->oMax[i].z[j] = baked->max[mIdx].z;
-                baked->oCenter[i].x[j] = baked->center[mIdx].x;
-                baked->oCenter[i].y[j] = baked->center[mIdx].y;
-                baked->oCenter[i].z[j] = baked->center[mIdx].z;
-                baked->oHalfSize[i].x[j] = baked->halfSize[mIdx].x;
-                baked->oHalfSize[i].y[j] = baked->halfSize[mIdx].y;
-                baked->oHalfSize[i].z[j] = baked->halfSize[mIdx].z;
+                baked->pMin[i].x[j] = baked->min[mIdx].x;
+                baked->pMin[i].y[j] = baked->min[mIdx].y;
+                baked->pMin[i].z[j] = baked->min[mIdx].z;
+                baked->pMax[i].x[j] = baked->max[mIdx].x;
+                baked->pMax[i].y[j] = baked->max[mIdx].y;
+                baked->pMax[i].z[j] = baked->max[mIdx].z;
+                baked->pCenter[i].x[j] = baked->center[mIdx].x;
+                baked->pCenter[i].y[j] = baked->center[mIdx].y;
+                baked->pCenter[i].z[j] = baked->center[mIdx].z;
+                baked->pHalfSize[i].x[j] = baked->halfSize[mIdx].x;
+                baked->pHalfSize[i].y[j] = baked->halfSize[mIdx].y;
+                baked->pHalfSize[i].z[j] = baked->halfSize[mIdx].z;
             }
         }
 
