@@ -173,10 +173,15 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
             // mfloat discriminantSqr = packDiscriminantSqr[instIdx]; // b * b - (c - spheres.radiusSq[i]);
             if (discriminantSqr > 0) {
                 mfloat discriminant = sqrt(discriminantSqr);
-                localHitInfo.distance = (-b - discriminant);
-                if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
+                // Process both solutions of the quadratic equation
+                mfloat t1 = -b - discriminant;
+                mfloat t2 = -b + discriminant;
+
+                if ((t1 > minDist && t1 < maxDist) || (t2 > minDist && t2 < maxDist)) {
+                    mfloat distance = (t1 > minDist && t1 < maxDist) ? t1 : t2;
+
                     // Calculate hit point
-                    p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
+                    p_ray_getPoint(&localHitInfo.point, ray, distance);
 
                     // Calculate normal
                     p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
@@ -185,24 +190,10 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
                     // Set material
                     localHitInfo.matIdx = spheres.matIdx[i];
                     localHitInfo.hitObjectPtr = &spheres.center[i];
+                    localHitInfo.distance = distance;
 
-                    hasHit = true;
-                } else {
-                    localHitInfo.distance = (-b + discriminant);
-                    if (localHitInfo.distance < maxDist && localHitInfo.distance > minDist) {
-                        // Calculate hit point
-                        p_ray_getPoint(&localHitInfo.point, ray, localHitInfo.distance);
-
-                        // Calculate normal
-                        p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
-                        p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
-
-                        // Set material
-                        localHitInfo.matIdx = spheres.matIdx[i];
-                        localHitInfo.hitObjectPtr = &spheres.center[i];
-
-                        hasHit = true;
-                    }
+                    _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
+                    hitCount++;
                 }
             }
 
