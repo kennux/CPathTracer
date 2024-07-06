@@ -363,12 +363,10 @@ void si_v_sumComps_p(mfloat *result, mfloat* v0x, mfloat* v0y, mfloat* v0z)
     __m256 xmm_y = _mm256_loadu_ps(v0y);
     __m256 xmm_z = _mm256_loadu_ps(v0z);
 
-    // Perform SIMD addition
-    __m256 xmm_sum1 = _mm256_add_ps(xmm_x, xmm_y); // Add tmpVec.x and tmpVec.y
-    xmm_sum1 = _mm256_add_ps(xmm_sum1, xmm_z);     // Add tmpVec.z
+    __m256 xmm_sum1 = _mm256_add_ps(xmm_x, xmm_y);
+    xmm_sum1 = _mm256_add_ps(xmm_sum1, xmm_z);
 
-    // Store the result back to result array
-    _mm256_storeu_ps(result, xmm_sum1); // Store xmm_sum1 into result[0], result[1], result[2], result[3]
+    _mm256_storeu_ps(result, xmm_sum1);
 #endif
 #else
     for (size_t i = 0; i < SIMD_MATH_WIDTH; i++)
@@ -480,6 +478,28 @@ void sip_v_mul_sp(Vec3f_Pack* result, Vec3f* v0, Vec3f_Pack* v1)
     si_v_mul_sp(&result->x, &result->y, &result->z, v0, &v1->x, &v1->y, &v1->z);
 }
 
+void si_ff_mul_p(mfloat* result, mfloat* factor0, mfloat* factor1)
+{
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 xmm1 = _mm_loadu_ps(factor0);
+    __m128 xmm2 = _mm_loadu_ps(factor1);
+    __m128 xmm_result = _mm_mul_ps(xmm1, xmm2);
+    _mm_storeu_ps(result, xmm_result);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 xmm1 = _mm256_loadu_ps(factor0);
+    __m256 xmm2 = _mm256_loadu_ps(factor1);
+    __m256 xmm_result = _mm256_mul_ps(xmm1, xmm2);
+    _mm256_store_ps(result, xmm_result);
+#endif
+#else
+    for (size_t i = 0; i < SIMD_MATH_WIDTH; i++)
+    {
+        result[i] = factor0[i] * factor1[i];
+    }
+#endif
+}
+
 void si_v_mul_pp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, mfloat* v0x, mfloat* v0y, mfloat* v0z, mfloat* v1x, mfloat* v1y, mfloat* v1z)
 {
 #if SIMD == 1
@@ -529,6 +549,27 @@ void sip_v_mul_pp(Vec3f_Pack* result, Vec3f_Pack* v0, Vec3f_Pack* v1)
     si_v_mul_pp(&result->x, &result->y, &result->z, &v0->x, &v0->y, &v0->z, &v1->x, &v1->y, &v1->z);
 }
 
+void si_ff_sub_p(mfloat* result, mfloat* minuend, mfloat* subtrahend)
+{
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 xmm1 = _mm_loadu_ps(minuend);
+    __m128 xmm2 = _mm_loadu_ps(subtrahend);
+    __m128 xmm_result = _mm_sub_ps(xmm1, xmm2);
+    _mm_storeu_ps(result, xmm_result);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 xmm1 = _mm256_loadu_ps(minuend);
+    __m256 xmm2 = _mm256_loadu_ps(subtrahend);
+    __m256 xmm_result = _mm256_sub_ps(xmm1, xmm2);
+    _mm256_storeu_ps(result, xmm_result);
+#endif
+#else
+    for (size_t i = 0; i < SIMD_MATH_WIDTH; i++)
+    {
+        result[i] = minuend[i] - subtrahend[i];
+    }
+#endif
+}
 
 void si_v_sub_sp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z)
 {

@@ -116,7 +116,7 @@ Vec3f v3f_max(Vec3f v0, Vec3f v1);
 Vec3f v3f_clamp01(Vec3f v0);
 
 // si_ = SIMD
-// sip = SIMD Packed
+// sip_ = SIMD Packed
 // - f_ = Float
 // - v_ = Vector
 // mul/add/... = Operation
@@ -125,6 +125,9 @@ Vec3f v3f_clamp01(Vec3f v0);
 
 void sip_f_mul_pp(mfloat* result, mfloat* pack1, mfloat* pack2);
 void sip_f_mul_ps(mfloat* result, mfloat* pack1, mfloat val);
+
+void si_ff_sub_p(mfloat* result, mfloat* minuend, mfloat* subtrahend);
+void si_ff_mul_p(mfloat* result, mfloat* factor0, mfloat* factor1);
 
 void si_v_sub_sp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z);
 void si_v_lenSq_p(mfloat* result, mfloat* v0x, mfloat* v0y, mfloat* v0z);

@@ -179,8 +179,8 @@ void transformBackbufferToBmpData(mfloat* backbufferData, char* bmpData, size_t 
     }
 }
 
-#define INITIAL_SAMPLES 32
-#define SAMPLES_PER_ITERATION 32
+#define INITIAL_SAMPLES 8
+#define SAMPLES_PER_ITERATION 8
 #define WIDTH 640
 #define HEIGHT 480
 

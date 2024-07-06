@@ -12,6 +12,7 @@ void bakedSpheres_Free(BakedSpheres* spheres)
     free(spheres->radiusSq);
     free(spheres->boxMax);
     free(spheres->boxMin);
+    free(spheres->pRadiusSq);
     p_vec3f_soa_destroy(&spheres->soaCenter);
 }
 
@@ -31,6 +32,7 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
         baked->pSphereIterationCount++;
 
     baked->pCenter = malloc(sizeof(Vec3f_Pack) * baked->pSphereIterationCount);
+    baked->pRadiusSq = malloc(sizeof(AlignedFloatPack) * baked->pSphereIterationCount);
     p_vec3f_soa(&baked->soaCenter, baked->pSphereIterationCount * SIMD_MATH_WIDTH);
 
     for (size_t i = 0; i < sphereCount; i++)
@@ -60,6 +62,7 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
             baked->pCenter[i].x[j] = 0;
             baked->pCenter[i].y[j] = 0;
             baked->pCenter[i].z[j] = 0;
+            baked->pRadiusSq[i][j] = 0;
         }
     }
 
@@ -74,6 +77,7 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
                 baked->pCenter[i].x[j] = baked->center[mIdx].x;
                 baked->pCenter[i].y[j] = baked->center[mIdx].y;
                 baked->pCenter[i].z[j] = baked->center[mIdx].z;
+                baked->pRadiusSq[i][j] = baked->radiusSq[mIdx];
             }
         }
 
@@ -118,6 +122,9 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
     SIMD_ALIGN Vec3f_Pack packOc;
     SIMD_ALIGN AlignedFloatPack packDot;
     SIMD_ALIGN AlignedFloatPack packLen;
+    /*SIMD_ALIGN AlignedFloatPack packB;
+    SIMD_ALIGN AlignedFloatPack packC;
+    SIMD_ALIGN AlignedFloatPack packDiscriminantSqr;*/
     SIMD_ALIGN mfloat b;
 
     // Spheres
@@ -135,6 +142,18 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
         // p_v3f_lengthSq(&c, &oc);
         si_v_lenSq_p(&packLen, &packOc.x, &packOc.y, &packOc.z);
 
+        /*
+        // discriminantSqr = b * b - (c - spheres.radiusSq[i])
+
+        // b * b
+        si_ff_mul_p(&packB, &packDot, &packDot);
+
+        // c - radiusSq
+        si_ff_sub_p(&packC, &packLen, &spheres.pRadiusSq[packIdx]);
+
+        // b - c
+        si_ff_sub_p(&packDiscriminantSqr, &packB, &packC);*/
+
         size_t itStart = packIdx * SIMD_MATH_WIDTH;
         size_t itEnd = min(itStart+SIMD_MATH_WIDTH, spheres.sphereCount);
         for (size_t instIdx = 0; instIdx < SIMD_MATH_WIDTH; instIdx++)
@@ -147,11 +166,11 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
             if (b > 0)
                 continue;
 
-            // length sq of oc
             mfloat c = packLen[instIdx];
 
             bool hasHit = false;
             mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
+            // mfloat discriminantSqr = packDiscriminantSqr[instIdx]; // b * b - (c - spheres.radiusSq[i]);
             if (discriminantSqr > 0) {
                 mfloat discriminant = sqrt(discriminantSqr);
                 localHitInfo.distance = (-b - discriminant);

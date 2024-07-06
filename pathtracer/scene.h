@@ -15,6 +15,7 @@ typedef struct BakedSpheres
 
     // Optimized memory access copies
     Vec3f_Pack* pCenter;
+    AlignedFloatPack* pRadiusSq;
     Vec3f_SoA soaCenter;
 
     size_t* matIdx;
