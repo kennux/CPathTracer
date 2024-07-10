@@ -179,6 +179,34 @@ void transformBackbufferToBmpData(mfloat* backbufferData, char* bmpData, size_t 
     }
 }
 
+void testRng(RandomState* state)
+{
+    int textureWidth = 512;
+    int textureHeight = 512;
+
+    mfloat* backbufferData = malloc(textureWidth * textureHeight * sizeof(float) * 4);
+    for (int x = 0; x < textureWidth; x++)
+        for (int y = 0; y < textureHeight; y++)
+        {
+            size_t yBackbufferIdx = y * textureWidth;
+            int colorIndex = (yBackbufferIdx + x) * 4;
+
+            float random = random_01(state);
+            backbufferData[colorIndex] = random;
+            backbufferData[colorIndex+1] = random;
+            backbufferData[colorIndex+2] = random;
+            backbufferData[colorIndex+3] = random;
+        }
+
+    int fileTimeI = time(NULL);
+    char* bmpData = malloc(textureWidth*textureHeight*3);
+    char tmpPath[512];
+    sprintf((void*)&tmpPath, "rng_%i.bmp", fileTimeI);
+    transformBackbufferToBmpData(backbufferData, bmpData, textureWidth, textureHeight);
+    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    free(bmpData);
+}
+
 #define INITIAL_SAMPLES 8
 #define SAMPLES_PER_ITERATION 8
 #define WIDTH 640
