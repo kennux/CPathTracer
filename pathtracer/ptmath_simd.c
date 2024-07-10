@@ -23,7 +23,45 @@ void sip_v_extract_s(Vec3f_Pack* pack, Vec3f* out, size_t idx)
 
 void si_v_lenSq_p(mfloat* result, mfloat* v0x, mfloat* v0y, mfloat* v0z)
 {
+    /*
+    si_v_dot_pp(result, v0x, v0y, v0z, v0x, v0y, v0z);*/
+
+    // Optimized:
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 m_v0x = _mm_loadu_ps(v0x);
+    __m128 m_v0y = _mm_loadu_ps(v0y);
+    __m128 m_v0z = _mm_loadu_ps(v0z);
+
+    // Square
+    m_v0x = _mm_mul_ps(m_v0x, m_v0x);
+    m_v0y = _mm_mul_ps(m_v0y, m_v0y);
+    m_v0z = _mm_mul_ps(m_v0z, m_v0z);
+
+    // Add
+    __m128 xmm_sum = _mm_add_ps(m_v0x, m_v0y);
+    xmm_sum = _mm_add_ps(xmm_sum, m_v0z);
+
+    _mm_storeu_ps(result, xmm_sum);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 m_v0x = _mm256_loadu_ps(v0x);
+    __m256 m_v0y = _mm256_loadu_ps(v0y);
+    __m256 m_v0z = _mm256_loadu_ps(v0z);
+
+    // Square
+    m_v0x = _mm256_mul_ps(m_v0x, m_v0x);
+    m_v0y = _mm256_mul_ps(m_v0y, m_v0y);
+    m_v0z = _mm256_mul_ps(m_v0z, m_v0z);
+
+    // Add
+    __m256 xmm_sum = _mm256_add_ps(m_v0x, m_v0y);
+    xmm_sum = _mm256_add_ps(xmm_sum, m_v0z);
+
+    _mm256_storeu_ps(result, xmm_sum);
+#endif
+#else
     si_v_dot_pp(result, v0x, v0y, v0z, v0x, v0y, v0z);
+#endif
 }
 
 void sip_v_lenSq_p(mfloat* result, Vec3f_Pack* v0)
@@ -45,8 +83,51 @@ void sip_v_dot_pp(mfloat* result, Vec3f_Pack* v0, Vec3f_Pack* v1)
 
 void si_v_dot_sp(mfloat* result, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z)
 {
+    /*
+    si_v_mul_sp(&tmpVec.x, &tmpVec.y, &tmpVec.z, v0, v1x, v1y, v1z);
+    si_v_sumComps_p(result, &tmpVec.x, &tmpVec.y, &tmpVec.z);*/
+
+    // Optimized:
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 xmm1 = _mm_broadcast_ss(&v0->x);
+    __m128 xmm2 = _mm_loadu_ps(v1x);
+    __m128 xmm_resultX = _mm_mul_ps(xmm1, xmm2);
+
+    xmm1 = _mm_broadcast_ss(&v0->y);
+    xmm2 = _mm_loadu_ps(v1y);
+    __m128 xmm_resultY = _mm_mul_ps(xmm1, xmm2);
+
+    xmm1 = _mm_broadcast_ss(&v0->z);
+    xmm2 = _mm_loadu_ps(v1z);
+    __m128 xmm_resultZ = _mm_mul_ps(xmm1, xmm2);
+
+    __m128 xmm_sum1 = _mm_add_ps(xmm_resultX, xmm_resultY);
+    xmm_sum1 = _mm_add_ps(xmm_sum1, xmm_resultZ);
+
+    _mm_storeu_ps(result, xmm_sum1);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 xmm1 = _mm256_broadcast_ss(&v0->x);
+    __m256 xmm2 = _mm256_loadu_ps(v1x);
+    __m256 xmm_resultX = _mm256_mul_ps(xmm1, xmm2);
+
+    xmm1 = _mm256_broadcast_ss(&v0->y);
+    xmm2 = _mm256_loadu_ps(v1y);
+    __m256 xmm_resultY = _mm256_mul_ps(xmm1, xmm2);
+
+    xmm1 = _mm256_broadcast_ss(&v0->z);
+    xmm2 = _mm256_loadu_ps(v1z);
+    __m256 xmm_resultZ = _mm256_mul_ps(xmm1, xmm2);
+
+    __m256 xmm_sum1 = _mm256_add_ps(xmm_resultX, xmm_resultY);
+    xmm_sum1 = _mm256_add_ps(xmm_sum1, xmm_resultZ);
+
+    _mm256_storeu_ps(result, xmm_sum1);
+#endif
+#else
     si_v_mul_sp(&tmpVec.x, &tmpVec.y, &tmpVec.z, v0, v1x, v1y, v1z);
     si_v_sumComps_p(result, &tmpVec.x, &tmpVec.y, &tmpVec.z);
+#endif
 }
 
 void sip_v_dot_sp(mfloat* result, Vec3f* v0, Vec3f_Pack* v1)
