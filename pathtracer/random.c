@@ -18,7 +18,7 @@ void random_packInUnitDisk(Vec3f_Pack* out, RandomState* state)
     {
         out->x[i] = (random_01(state) * 2.0f) - 1.0f;
         out->y[i] = (random_01(state) * 2.0f) - 1.0f;
-        out->z[0] = 0;
+        out->z[i] = 0;
     }
 
     sip_v_normalize_p(out, out);
