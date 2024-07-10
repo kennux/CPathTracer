@@ -125,7 +125,6 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
     /*SIMD_ALIGN AlignedFloatPack packB;
     SIMD_ALIGN AlignedFloatPack packC;
     SIMD_ALIGN AlignedFloatPack packDiscriminantSqr;*/
-    SIMD_ALIGN mfloat b;
 
     // Spheres
     BakedSpheres spheres = scene->spheres;
@@ -139,9 +138,6 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
         // p_v3f_dot(&b, &oc, &ray->direction);
         si_v_dot_sp(&packDot, &ray->direction, &packOc.x, &packOc.y, &packOc.z);
 
-        // p_v3f_lengthSq(&c, &oc);
-        si_v_lenSq_p(&packLen, &packOc.x, &packOc.y, &packOc.z);
-
         /*
         // discriminantSqr = b * b - (c - spheres.radiusSq[i])
 
@@ -154,45 +150,52 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
         // b - c
         si_ff_sub_p(&packDiscriminantSqr, &packB, &packC);*/
 
-        size_t itStart = packIdx * SIMD_MATH_WIDTH;
-        size_t itEnd = min(itStart+SIMD_MATH_WIDTH, spheres.sphereCount);
-        for (size_t instIdx = 0; instIdx < SIMD_MATH_WIDTH; instIdx++)
-        {
-            size_t i = itStart + instIdx;
-            if (i >= itEnd)
-                break;
+        SimdCompareMask mask = si_f_any_lte(&packDot, 0);
 
-            b = packDot[instIdx];
-            if (b > 0)
-                continue;
+        if (mask != 0) {
+            // p_v3f_lengthSq(&c, &oc);
+            si_v_lenSq_p(&packLen, &packOc.x, &packOc.y, &packOc.z);
 
-            mfloat c = packLen[instIdx];
+            size_t itStart = packIdx * SIMD_MATH_WIDTH;
+            size_t itEnd = min(itStart + SIMD_MATH_WIDTH, spheres.sphereCount);
+            for (size_t instIdx = 0; instIdx < SIMD_MATH_WIDTH; instIdx++) {
 
-            mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
-            // mfloat discriminantSqr = packDiscriminantSqr[instIdx]; // b * b - (c - spheres.radiusSq[i]);
-            if (discriminantSqr > 0) {
-                mfloat discriminant = sqrt(discriminantSqr);
-                // Process both solutions of the quadratic equation
-                mfloat t1 = -b - discriminant;
-                mfloat t2 = -b + discriminant;
+                if ((mask & (1 << instIdx)) == 0)
+                    continue;
 
-                if ((t1 > minDist && t1 < maxDist) || (t2 > minDist && t2 < maxDist)) {
-                    mfloat distance = (t1 > minDist && t1 < maxDist) ? t1 : t2;
+                size_t i = itStart + instIdx;
+                if (i >= itEnd)
+                    break;
 
-                    // Calculate hit point
-                    p_ray_getPoint(&localHitInfo.point, ray, distance);
+                mfloat c = packLen[instIdx];
+                mfloat b = packDot[instIdx];
 
-                    // Calculate normal
-                    p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
-                    p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
+                mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
+                // mfloat discriminantSqr = packDiscriminantSqr[instIdx]; // b * b - (c - spheres.radiusSq[i]);
+                if (discriminantSqr > 0) {
+                    mfloat discriminant = sqrt(discriminantSqr);
+                    // Process both solutions of the quadratic equation
+                    mfloat t1 = -b - discriminant;
+                    mfloat t2 = -b + discriminant;
 
-                    // Set material
-                    localHitInfo.matIdx = spheres.matIdx[i];
-                    localHitInfo.hitObjectPtr = &spheres.center[i];
-                    localHitInfo.distance = distance;
+                    if ((t1 > minDist && t1 < maxDist) || (t2 > minDist && t2 < maxDist)) {
+                        mfloat distance = (t1 > minDist && t1 < maxDist) ? t1 : t2;
 
-                    _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
-                    hitCount++;
+                        // Calculate hit point
+                        p_ray_getPoint(&localHitInfo.point, ray, distance);
+
+                        // Calculate normal
+                        p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
+                        p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
+
+                        // Set material
+                        localHitInfo.matIdx = spheres.matIdx[i];
+                        localHitInfo.hitObjectPtr = &spheres.center[i];
+                        localHitInfo.distance = distance;
+
+                        _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
+                        hitCount++;
+                    }
                 }
             }
         }

@@ -571,6 +571,81 @@ void si_ff_sub_p(mfloat* result, mfloat* minuend, mfloat* subtrahend)
 #endif
 }
 
+SimdCompareMask si_f_any_gte(mfloat* pack, mfloat greaterThanOrEqualTo)
+{
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 data = _mm_loadu_ps(pack);
+    __m128 comparisonVal = _mm_broadcast_ss(&greaterThanOrEqualTo);
+    __m128 cmp = _mm_cmp_ps(data, comparisonVal, _CMP_GE_OQ);
+    return _mm_movemask_ps(cmp);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 data = _mm256_loadu_ps(pack);
+    __m256 comparisonVal = _mm256_broadcast_ss(&greaterThanOrEqualTo);
+    __m256 cmp = _mm256_cmp_ps(data, comparisonVal, _CMP_GE_OQ);
+    return _mm256_movemask_ps(cmp);
+#endif
+#else
+    SimdCompareMask mask = 0;
+    for (int i = 0; i < SIMD_MATH_WIDTH; i++) {
+        if (pack[i] >= greaterThanOrEqualTo) {
+            mask |= (1 << i);
+        }
+    }
+    return mask;
+#endif
+}
+
+SimdCompareMask si_f_any_lte(mfloat* pack, mfloat lessThanOrEqual)
+{
+#if SIMD == 1
+    #if SIMD_MATH_WIDTH == 4
+    __m128 data = _mm_loadu_ps(pack);
+    __m128 comparisonVal = _mm_broadcast_ss(&lessThanOrEqual);
+    __m128 cmp = _mm_cmp_ps(data, comparisonVal, _CMP_LE_OQ);
+    return _mm_movemask_ps(cmp);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 data = _mm256_loadu_ps(pack);
+    __m256 comparisonVal = _mm256_broadcast_ss(&lessThanOrEqual);
+    __m256 cmp = _mm256_cmp_ps(data, comparisonVal, _CMP_LE_OQ);
+    return _mm256_movemask_ps(cmp);
+#endif
+#else
+    SimdCompareMask mask = 0;
+    for (int i = 0; i < SIMD_MATH_WIDTH; i++) {
+        if (pack[i] <= lessThanOrEqual) {
+            mask |= (1 << i);
+        }
+    }
+    return mask;
+#endif
+}
+
+SimdCompareMask si_f_any_gt(mfloat* pack, mfloat greaterThan)
+{
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 data = _mm_loadu_ps(pack);
+    __m128 comparisonVal = _mm_broadcast_ss(&greaterThan);
+    __m128 cmp = _mm_cmp_ps(data, comparisonVal, _CMP_GT_OQ);
+    return _mm_movemask_ps(cmp);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 data = _mm256_loadu_ps(pack);
+    __m256 comparisonVal = _mm256_broadcast_ss(&greaterThan);
+    __m256 cmp = _mm256_cmp_ps(data, comparisonVal, _CMP_GT_OQ);
+    return _mm256_movemask_ps(cmp);
+#endif
+#else
+    SimdCompareMask mask = 0;
+    for (int i = 0; i < SIMD_MATH_WIDTH; i++) {
+        if (pack[i] > greaterThan) {
+            mask |= (1 << i);
+        }
+    }
+    return mask;
+#endif
+}
+
 void si_v_sub_sp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z)
 {
 #if SIMD == 1

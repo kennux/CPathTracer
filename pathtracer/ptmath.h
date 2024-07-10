@@ -71,6 +71,8 @@ SIMD_ALIGN typedef struct Vec3f_SoA
     SIMD_ALIGN mfloat* z;
 } Vec3f_SoA;
 
+SIMD_ALIGN typedef int SimdCompareMask;
+
 // SoA Data handling
 void p_vec3f_soa(Vec3f_SoA* result, size_t size);
 void p_vec3f_soa_fill(Vec3f_SoA* soa, Vec3f* source, size_t size);
@@ -128,6 +130,10 @@ void sip_f_mul_ps(mfloat* result, mfloat* pack1, mfloat val);
 
 void si_ff_sub_p(mfloat* result, mfloat* minuend, mfloat* subtrahend);
 void si_ff_mul_p(mfloat* result, mfloat* factor0, mfloat* factor1);
+
+SimdCompareMask si_f_any_gte(mfloat* pack, mfloat greaterThanOrEqualTo);
+SimdCompareMask si_f_any_gt(mfloat* pack, mfloat greaterThan);
+SimdCompareMask si_f_any_lte(mfloat* pack, mfloat lessThanOrEqual);
 
 void si_v_sub_sp(mfloat* resultX, mfloat* resultY, mfloat* resultZ, Vec3f* v0, mfloat* v1x, mfloat* v1y, mfloat* v1z);
 void si_v_lenSq_p(mfloat* result, mfloat* v0x, mfloat* v0y, mfloat* v0z);
