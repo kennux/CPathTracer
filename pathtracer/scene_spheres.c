@@ -116,23 +116,20 @@ void _scene_BakeSpheres(Scene* scene, BakedScene* baked)
 int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
 {
     int hitCount = 0;
-    HitInfo localHitInfo;
 
     // Prep packs
     SIMD_ALIGN Vec3f_Pack packOc;
     SIMD_ALIGN AlignedFloatPack packDot;
     SIMD_ALIGN AlignedFloatPack packLen;
-    /*SIMD_ALIGN AlignedFloatPack packB;
-    SIMD_ALIGN AlignedFloatPack packC;
-    SIMD_ALIGN AlignedFloatPack packDiscriminantSqr;*/
 
     // Spheres
-    BakedSpheres spheres = scene->spheres;
-    for (size_t packIdx = 0; packIdx < spheres.pSphereIterationCount; packIdx++)
+    BakedSpheres* spheres = &scene->spheres;
+    size_t iterationCount = spheres->pSphereIterationCount;
+    for (size_t packIdx = 0; packIdx < iterationCount; packIdx++)
     {
         // origin-center
         si_v_sub_sp(&packOc.x, &packOc.y, &packOc.z, &ray->origin,
-                    &spheres.soaCenter.x[packIdx * SIMD_MATH_WIDTH], &spheres.soaCenter.y[packIdx * SIMD_MATH_WIDTH], &spheres.soaCenter.z[packIdx * SIMD_MATH_WIDTH]);
+                    &spheres->soaCenter.x[packIdx * SIMD_MATH_WIDTH], &spheres->soaCenter.y[packIdx * SIMD_MATH_WIDTH], &spheres->soaCenter.z[packIdx * SIMD_MATH_WIDTH]);
 
         // oc.direction
         // p_v3f_dot(&b, &oc, &ray->direction);
@@ -157,7 +154,7 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
             si_v_lenSq_p(&packLen, &packOc.x, &packOc.y, &packOc.z);
 
             size_t itStart = packIdx * SIMD_MATH_WIDTH;
-            size_t itEnd = min(itStart + SIMD_MATH_WIDTH, spheres.sphereCount);
+            size_t itEnd = min(itStart + SIMD_MATH_WIDTH, spheres->sphereCount);
             for (size_t instIdx = 0; instIdx < SIMD_MATH_WIDTH; instIdx++) {
 
                 if ((mask & (1 << instIdx)) == 0)
@@ -170,7 +167,7 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
                 mfloat c = packLen[instIdx];
                 mfloat b = packDot[instIdx];
 
-                mfloat discriminantSqr = b * b - (c - (spheres.radiusSq[i]));
+                mfloat discriminantSqr = b * b - (c - (spheres->radiusSq[i]));
                 // mfloat discriminantSqr = packDiscriminantSqr[instIdx]; // b * b - (c - spheres.radiusSq[i]);
                 if (discriminantSqr > 0) {
                     mfloat discriminant = sqrt(discriminantSqr);
@@ -181,20 +178,21 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
                     if ((t1 > minDist && t1 < maxDist) || (t2 > minDist && t2 < maxDist)) {
                         mfloat distance = (t1 > minDist && t1 < maxDist) ? t1 : t2;
 
-                        // Calculate hit point
-                        p_ray_getPoint(&localHitInfo.point, ray, distance);
+                        if (hitCount == 0 || outHitInfo->distance > distance) {
+                            // Calculate hit point
+                            p_ray_getPoint(&outHitInfo->point, ray, distance);
 
-                        // Calculate normal
-                        p_v3f_sub_v3f(&localHitInfo.normal, &localHitInfo.point, &spheres.center[i]);
-                        p_v3f_mul_f(&localHitInfo.normal, &localHitInfo.normal, spheres.radiusReciprocal[i]);
+                            // Calculate normal
+                            p_v3f_sub_v3f(&outHitInfo->normal, &outHitInfo->point, &spheres->center[i]);
+                            p_v3f_mul_f(&outHitInfo->normal, &outHitInfo->normal, spheres->radiusReciprocal[i]);
 
-                        // Set material
-                        localHitInfo.matIdx = spheres.matIdx[i];
-                        localHitInfo.hitObjectPtr = &spheres.center[i];
-                        localHitInfo.distance = distance;
+                            // Set material
+                            outHitInfo->matIdx = spheres->matIdx[i];
+                            outHitInfo->hitObjectPtr = &spheres->center[i];
+                            outHitInfo->distance = distance;
 
-                        _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
-                        hitCount++;
+                            hitCount++;
+                        }
                     }
                 }
             }

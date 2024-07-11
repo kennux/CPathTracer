@@ -207,10 +207,11 @@ void testRng(RandomState* state)
     free(bmpData);
 }
 
-#define INITIAL_SAMPLES 8
-#define SAMPLES_PER_ITERATION 8
+#define INITIAL_SAMPLES 32
+#define SAMPLES_PER_ITERATION 32
 #define WIDTH 640
 #define HEIGHT 480
+#define THREAD_COUNT 32
 
 int main(void) {
     GLFWwindow* window;
@@ -273,8 +274,11 @@ int main(void) {
 
     uint64_t rayCount = 0;
     start = clock();
-    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32, progressCallback, 0, &rndState);
-    //traceTile(fullTileParams, backbufferData, &rayCount, 0, &rndState);
+#if THREAD_COUNT == 1
+    traceTile(fullTileParams, backbufferData, &rayCount, 0, &rndState);
+#else
+    traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, THREAD_COUNT, progressCallback, 0, &rndState);
+#endif
     end = clock();
 
     seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
@@ -292,7 +296,7 @@ int main(void) {
     char tmpPath[512];
     sprintf((void*)&tmpPath, "%i.bmp", fileTimeI);
     transformBackbufferToBmpData(backbufferData, bmpData, textureWidth, textureHeight);
-    saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
+    // saveBMP(&tmpPath, textureWidth, textureHeight, bmpData);
     free(bmpData);
 
 
@@ -349,13 +353,14 @@ int main(void) {
         fullTileParams.traceParams.samplesPerPixel = SAMPLES_PER_ITERATION;
         params.samplesPerPixel = SAMPLES_PER_ITERATION;
         parallelTileTraceParams(params, tileSize, tileSize, parallelTileParams);
+        rayCount = 0;
 
         start = clock();
-        // MT
-        traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, 32, progressCallback, sampleCount, &rndState);
-
-        // ST
-        //traceTile(fullTileParams, backbufferData, &rayCount, sampleCount, &rndState);
+#if THREAD_COUNT == 1
+        traceTile(fullTileParams, backbufferData, &rayCount, sampleCount, &rndState);
+#else
+        traceParallel(parallelTileParams, parallelTileCount, backbufferData, &rayCount, THREAD_COUNT, progressCallback, sampleCount, &rndState);
+#endif
         end = clock();
 
         seconds = (float)(end - start) / (float)CLOCKS_PER_SEC;
