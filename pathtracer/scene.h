@@ -22,6 +22,7 @@ typedef struct BakedSpheres
 
     size_t sphereCount;
     size_t pSphereIterationCount;
+    size_t emissiveSphereCount;
 } BakedSpheres;
 
 typedef struct BakedBoxes
@@ -40,6 +41,7 @@ typedef struct BakedBoxes
 
     size_t boxCount;
     size_t pBoxIterationCount;
+    size_t emissiveBoxCount;
 } BakedBoxes;
 
 typedef struct Box
@@ -78,12 +80,8 @@ typedef struct BakedScene
 {
     // Scene data
     BakedSpheres spheres;
-    size_t* emissiveSpheres;
-    size_t emissiveSphereCount;
 
     BakedBoxes boxes;
-    size_t* emissiveBoxes;
-    size_t emissiveBoxCount;
 
     // Lighting data
     Vec3f ambientLight;

@@ -150,11 +150,10 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
 
     *outLight = vec3f(0,0,0);
 
-    for (size_t j = 0; j < scene->emissiveSphereCount; j++)
+    size_t emissiveSphereCount = scene->spheres.emissiveSphereCount;
+    for (size_t i = 0; i < emissiveSphereCount; i++)
     {
-        size_t i = scene->emissiveSpheres[j];
-
-        if (hit->matIdx == scene->spheres.matIdx[i])
+        if (hit->hitObjectPtr == &scene->spheres.center[i])
             continue; // Skip self
 
         _material_computeLightRay_Sphere(rayIn, &lightRay, hit, scene, i, random, &lightIntensity);
@@ -166,11 +165,10 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
         }
     }
 
-    for (size_t j = 0; j < scene->emissiveBoxCount; j++)
+    size_t emissiveBoxCount = scene->boxes.emissiveBoxCount;
+    for (size_t i = 0; i < emissiveBoxCount; i++)
     {
-        size_t i = scene->emissiveBoxes[j];
-
-        if (hit->matIdx == scene->boxes.matIdx[i])
+        if (hit->hitObjectPtr == &scene->boxes.center[i])
             continue; // Skip self
 
         _material_computeLightRay_Box(rayIn, &lightRay, hit, scene, i, random, &lightIntensity);

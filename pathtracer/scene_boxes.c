@@ -31,8 +31,33 @@ void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_
     baked->pCenter = malloc(sizeof(Vec3f_Pack) * baked->pBoxIterationCount);
     baked->pHalfSize = malloc(sizeof(Vec3f_Pack) * baked->pBoxIterationCount);
 
+    size_t* order = malloc(sizeof(size_t) * boxCount);
+    size_t orderPtr = 0;
+
+    // Fill emissives
     for (size_t i = 0; i < boxCount; i++)
     {
+        Vec3f emissive = boxes[i].material->emissive;
+        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
+        {
+            order[orderPtr++] = i;
+        }
+    }
+    baked->emissiveBoxCount = orderPtr;
+
+    // Fill rest
+    for (size_t i = 0; i < boxCount; i++)
+    {
+        Vec3f emissive = boxes[i].material->emissive;
+        if (emissive.x <= 0.0001f && emissive.y <= 0.0001f && emissive.z <= 0.0001f)
+        {
+            order[orderPtr++] = i;
+        }
+    }
+
+    for (size_t j = 0; j < boxCount; j++)
+    {
+        size_t i = order[j];
         Vec3f min = boxes[i].center;
         Vec3f max = boxes[i].center;
 
@@ -52,6 +77,7 @@ void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_
         }
         baked->matIdx[i] = matIdx;
     }
+    free(order);
 
     // Clear prepass
     for (size_t i = 0; i < baked->pBoxIterationCount; i++)
@@ -109,21 +135,6 @@ void _scene_BakeBoxes(Scene* scene, BakedScene* baked)
         if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
             emissiveBoxCount++;
     }
-
-    size_t emissiveBoxIdx = 0;
-    size_t* emissiveBoxes = malloc(sizeof(size_t) * emissiveBoxCount);
-    for (size_t i = 0; i < scene->boxCount; i++)
-    {
-        Vec3f emissive = scene->boxes[i].material->emissive;
-        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
-        {
-            emissiveBoxes[emissiveBoxIdx] = i;
-            emissiveBoxIdx++;
-        }
-    }
-
-    baked->emissiveBoxes = emissiveBoxes;
-    baked->emissiveBoxCount = emissiveBoxCount;
 
     bakedBoxes_Create(&baked->boxes, scene->boxes, scene->materials, scene->boxCount, scene->materialCount);
 }

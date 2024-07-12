@@ -35,8 +35,33 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
     baked->pRadiusSq = malloc(sizeof(AlignedFloatPack) * baked->pSphereIterationCount);
     p_vec3f_soa(&baked->soaCenter, baked->pSphereIterationCount * SIMD_MATH_WIDTH);
 
+    size_t* order = malloc(sizeof(size_t) * sphereCount);
+    size_t orderPtr = 0;
+
+    // Fill emissives
     for (size_t i = 0; i < sphereCount; i++)
     {
+        Vec3f emissive = spheres[i].material->emissive;
+        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
+        {
+            order[orderPtr++] = i;
+        }
+    }
+    baked->emissiveSphereCount = orderPtr;
+
+    // Fill rest
+    for (size_t i = 0; i < sphereCount; i++)
+    {
+        Vec3f emissive = spheres[i].material->emissive;
+        if (emissive.x <= 0.0001f && emissive.y <= 0.0001f && emissive.z <= 0.0001f)
+        {
+            order[orderPtr++] = i;
+        }
+    }
+
+    for (size_t j = 0; j < sphereCount; j++)
+    {
+        size_t i = order[j];
         baked->radius[i] = spheres[i].radius;
         baked->radiusSq[i] = spheres[i].radius * spheres[i].radius;
         baked->radiusReciprocal[i] = 1.0f / spheres[i].radius;
@@ -53,6 +78,7 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
         baked->matIdx[i] = matIdx;
     }
     p_vec3f_soa_fill(&baked->soaCenter, baked->center, baked->sphereCount);
+    free(order);
 
     // Clear prepass
     for (size_t i = 0; i < baked->pSphereIterationCount; i++)
@@ -107,9 +133,6 @@ void _scene_BakeSpheres(Scene* scene, BakedScene* baked)
         }
     }
 
-    baked->emissiveSpheres = emissiveSpheres;
-    baked->emissiveSphereCount = emissiveSphereCount;
-
     bakedSpheres_Create(&baked->spheres, scene->spheres, scene->materials, scene->sphereCount, scene->materialCount);
 }
 
@@ -134,18 +157,6 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
         // oc.direction
         // p_v3f_dot(&b, &oc, &ray->direction);
         si_v_dot_sp(&packDot, &ray->direction, &packOc.x, &packOc.y, &packOc.z);
-
-        /*
-        // discriminantSqr = b * b - (c - spheres.radiusSq[i])
-
-        // b * b
-        si_ff_mul_p(&packB, &packDot, &packDot);
-
-        // c - radiusSq
-        si_ff_sub_p(&packC, &packLen, &spheres.pRadiusSq[packIdx]);
-
-        // b - c
-        si_ff_sub_p(&packDiscriminantSqr, &packB, &packC);*/
 
         SimdCompareMask mask = si_f_any_lte(&packDot, 0);
 

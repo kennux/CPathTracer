@@ -10,7 +10,6 @@
 void bakedScene_Free(BakedScene* scene)
 {
     bakedSpheres_Free(&scene->spheres);
-    free(scene->emissiveSpheres);
     bakedMaterials_Free(&scene->materials);
 }
 
