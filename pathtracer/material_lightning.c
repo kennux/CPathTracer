@@ -158,7 +158,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
             continue; // Skip self
 
         _material_computeLightRay_Sphere(rayIn, &lightRay, hit, scene, i, random, &lightIntensity);
-        ++rayCount;
+        ++*rayCount;
         int hits = scene_Raycast(&lightHit, scene, &lightRay, 0.00001f, 9999999);
         if (hits > 0 && lightHit.hitObjectPtr == &scene->spheres.center[i])
         {
@@ -174,7 +174,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene
             continue; // Skip self
 
         _material_computeLightRay_Box(rayIn, &lightRay, hit, scene, i, random, &lightIntensity);
-        ++rayCount;
+        ++*rayCount;
         int hits = scene_Raycast(&lightHit, scene, &lightRay, 0.00001f, 9999999);
         if (hits > 0 && lightHit.hitObjectPtr == &scene->boxes.center[i])
         {
