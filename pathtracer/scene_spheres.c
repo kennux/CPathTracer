@@ -62,20 +62,20 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
     for (size_t j = 0; j < sphereCount; j++)
     {
         size_t i = order[j];
-        baked->radius[i] = spheres[i].radius;
-        baked->radiusSq[i] = spheres[i].radius * spheres[i].radius;
-        baked->radiusReciprocal[i] = 1.0f / spheres[i].radius;
-        baked->center[i] = spheres[i].center;
-        baked->boxMax[i] = v3f_add_v3f(spheres[i].center, vec3f(spheres[i].radius, spheres[i].radius, spheres[i].radius));
-        baked->boxMin[i] = v3f_sub_v3f(spheres[i].center, vec3f(spheres[i].radius, spheres[i].radius, spheres[i].radius));
+        baked->radius[j] = spheres[i].radius;
+        baked->radiusSq[j] = spheres[i].radius * spheres[i].radius;
+        baked->radiusReciprocal[j] = 1.0f / spheres[i].radius;
+        baked->center[j] = spheres[i].center;
+        baked->boxMax[j] = v3f_add_v3f(spheres[i].center, vec3f(spheres[i].radius, spheres[i].radius, spheres[i].radius));
+        baked->boxMin[j] = v3f_sub_v3f(spheres[i].center, vec3f(spheres[i].radius, spheres[i].radius, spheres[i].radius));
 
         size_t matIdx = 0;
-        for (size_t j = 0; j < materialCount; j++)
+        for (size_t k = 0; k < materialCount; k++)
         {
-            if (&materials[j] == spheres[i].material)
-                matIdx = j;
+            if (&materials[k] == spheres[i].material)
+                matIdx = k;
         }
-        baked->matIdx[i] = matIdx;
+        baked->matIdx[j] = matIdx;
     }
     p_vec3f_soa_fill(&baked->soaCenter, baked->center, baked->sphereCount);
     free(order);
@@ -113,33 +113,11 @@ void bakedSpheres_Create(BakedSpheres* baked, Sphere* spheres, Material* materia
 
 void _scene_BakeSpheres(Scene* scene, BakedScene* baked)
 {
-    size_t emissiveSphereCount = 0;
-    for (size_t i = 0; i < scene->sphereCount; i++)
-    {
-        Vec3f emissive = scene->spheres[i].material->emissive;
-        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
-            emissiveSphereCount++;
-    }
-
-    size_t emissiveSphereIdx = 0;
-    size_t* emissiveSpheres = malloc(sizeof(size_t) * emissiveSphereCount);
-    for (size_t i = 0; i < scene->sphereCount; i++)
-    {
-        Vec3f emissive = scene->spheres[i].material->emissive;
-        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
-        {
-            emissiveSpheres[emissiveSphereIdx] = i;
-            emissiveSphereIdx++;
-        }
-    }
-
     bakedSpheres_Create(&baked->spheres, scene->spheres, scene->materials, scene->sphereCount, scene->materialCount);
 }
 
-int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
+void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
 {
-    int hitCount = 0;
-
     // Prep packs
     SIMD_ALIGN Vec3f_Pack packOc;
     SIMD_ALIGN AlignedFloatPack packDot;
@@ -189,26 +167,24 @@ int scene_RaycastSpheres(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloa
                     if ((t1 > minDist && t1 < maxDist) || (t2 > minDist && t2 < maxDist)) {
                         mfloat distance = (t1 > minDist && t1 < maxDist) ? t1 : t2;
 
-                        if (hitCount == 0 || outHitInfo->distance > distance) {
+                        if (*hitCount == 0 || hitInfo->distance > distance) {
                             // Calculate hit point
-                            p_ray_getPoint(&outHitInfo->point, ray, distance);
+                            p_ray_getPoint(&hitInfo->point, ray, distance);
 
                             // Calculate normal
-                            p_v3f_sub_v3f(&outHitInfo->normal, &outHitInfo->point, &spheres->center[i]);
-                            p_v3f_mul_f(&outHitInfo->normal, &outHitInfo->normal, spheres->radiusReciprocal[i]);
+                            p_v3f_sub_v3f(&hitInfo->normal, &hitInfo->point, &spheres->center[i]);
+                            p_v3f_mul_f(&hitInfo->normal, &hitInfo->normal, spheres->radiusReciprocal[i]);
 
                             // Set material
-                            outHitInfo->matIdx = spheres->matIdx[i];
-                            outHitInfo->hitObjectPtr = &spheres->center[i];
-                            outHitInfo->distance = distance;
-
-                            hitCount++;
+                            hitInfo->matIdx = spheres->matIdx[i];
+                            hitInfo->hitObjectPtr = &spheres->center[i];
+                            hitInfo->distance = distance;
                         }
+
+                        ++*hitCount;
                     }
                 }
             }
         }
     }
-
-    return hitCount;
 }

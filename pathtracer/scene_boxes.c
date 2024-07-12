@@ -64,18 +64,18 @@ void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_
         p_v3f_sub_v3f(&min, &min, &boxes[i].halfSize);
         p_v3f_add_v3f(&max, &max, &boxes[i].halfSize);
 
-        baked->min[i] = min;
-        baked->max[i] = max;
-        baked->center[i] = boxes[i].center;
-        baked->halfSize[i] = boxes[i].halfSize;
+        baked->min[j] = min;
+        baked->max[j] = max;
+        baked->center[j] = boxes[i].center;
+        baked->halfSize[j] = boxes[i].halfSize;
 
         size_t matIdx = 0;
-        for (size_t j = 0; j < materialCount; j++)
+        for (size_t k = 0; k < materialCount; k++)
         {
-            if (&materials[j] == boxes[i].material)
-                matIdx = j;
+            if (&materials[k] == boxes[i].material)
+                matIdx = k;
         }
-        baked->matIdx[i] = matIdx;
+        baked->matIdx[j] = matIdx;
     }
     free(order);
 
@@ -128,21 +128,11 @@ void bakedBoxes_Create(BakedBoxes* baked, Box* boxes, Material* materials, size_
 
 void _scene_BakeBoxes(Scene* scene, BakedScene* baked)
 {
-    size_t emissiveBoxCount = 0;
-    for (size_t i = 0; i < scene->boxCount; i++)
-    {
-        Vec3f emissive = scene->boxes[i].material->emissive;
-        if (emissive.x > 0.0001f || emissive.y > 0.0001f || emissive.z > 0.0001f)
-            emissiveBoxCount++;
-    }
-
     bakedBoxes_Create(&baked->boxes, scene->boxes, scene->materials, scene->boxCount, scene->materialCount);
 }
 
-int scene_RaycastBoxes(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
+void scene_RaycastBoxes(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
 {
-    int hitCount = 0;
-    HitInfo localHitInfo;
     Vec3f* boxMin = scene->boxes.min;
     Vec3f* boxMax = scene->boxes.max;
 
@@ -203,38 +193,37 @@ int scene_RaycastBoxes(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat 
                 continue;
         }
 
-        // Calculate hit point
-        Vec3f hitPoint = vec3f(
+        if (*hitCount == 0 || hitInfo->distance > tmin) {
+            // Calculate hit point
+            Vec3f hitPoint = vec3f(
                 ray->origin.x + tmin * ray->direction.x,
                 ray->origin.y + tmin * ray->direction.y,
                 ray->origin.z + tmin * ray->direction.z
-        );
+            );
 
-        // Calculate normal
-        Vec3f normal = {0.0f, 0.0f, 0.0f};
-        if (hitPoint.x >= boxMax->x - FLT_EPSILON) {
-            normal.x = 1.0f;
-        } else if (hitPoint.x <= boxMin->x + FLT_EPSILON) {
-            normal.x = -1.0f;
-        } else if (hitPoint.y >= boxMax->y - FLT_EPSILON) {
-            normal.y = 1.0f;
-        } else if (hitPoint.y <= boxMin->y + FLT_EPSILON) {
-            normal.y = -1.0f;
-        } else if (hitPoint.z >= boxMax->z - FLT_EPSILON) {
-            normal.z = 1.0f;
-        } else if (hitPoint.z <= boxMin->z + FLT_EPSILON) {
-            normal.z = -1.0f;
+            // Calculate normal
+            Vec3f normal = {0.0f, 0.0f, 0.0f};
+            if (hitPoint.x >= boxMax->x - MFLOAT_EPSILON) {
+                normal.x = 1.0f;
+            } else if (hitPoint.x <= boxMin->x + MFLOAT_EPSILON) {
+                normal.x = -1.0f;
+            } else if (hitPoint.y >= boxMax->y - MFLOAT_EPSILON) {
+                normal.y = 1.0f;
+            } else if (hitPoint.y <= boxMin->y + MFLOAT_EPSILON) {
+                normal.y = -1.0f;
+            } else if (hitPoint.z >= boxMax->z - MFLOAT_EPSILON) {
+                normal.z = 1.0f;
+            } else if (hitPoint.z <= boxMin->z + MFLOAT_EPSILON) {
+                normal.z = -1.0f;
+            }
+
+            hitInfo->distance = tmin;
+            hitInfo->point = hitPoint;
+            hitInfo->normal = normal;
+            hitInfo->hitObjectPtr = &scene->boxes.center[i];
+            hitInfo->matIdx = scene->boxes.matIdx[i];
         }
 
-        localHitInfo.distance = tmin;
-        localHitInfo.point = hitPoint;
-        localHitInfo.normal = normal;
-        localHitInfo.hitObjectPtr = &scene->boxes.center[i];
-        localHitInfo.matIdx = scene->boxes.matIdx[i];
-
-        _raycast_ExchangeHit(outHitInfo, &localHitInfo, hitCount);
-        hitCount++;
+        ++*hitCount;
     }
-
-    return hitCount;
 }

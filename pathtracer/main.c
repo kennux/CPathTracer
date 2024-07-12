@@ -115,13 +115,13 @@ Scene createScene()
 
     // Create boxes
     scene.boxes = malloc(sizeof(Box) * 2);
-    scene.boxCount = 0;
+    scene.boxCount = 0; // Boxes are kinda broken atm...
     Box* editBox = &scene.boxes[0];
     editBox->center = vec3f(2, .5f, -1);
     editBox->halfSize = vec3f(.5f, .5f, .5f);
     editBox->material = materialLambert1;
     editBox = &scene.boxes[1];
-    editBox->center = vec3f(0, 2.f, 0.5f);
+    editBox->center = vec3f(.75f, .5f, -0.75f);
     editBox->halfSize = vec3f(.25f, .25f, .25f);
     editBox->material = materialEmissive;
 
@@ -210,7 +210,7 @@ void testRng(RandomState* state)
 #define INITIAL_SAMPLES 8
 #define SAMPLES_PER_ITERATION 8
 #define WIDTH 640
-#define HEIGHT 480
+#define HEIGHT 320
 #define THREAD_COUNT 32
 
 int main(void) {

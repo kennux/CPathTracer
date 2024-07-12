@@ -10,6 +10,7 @@
 void bakedScene_Free(BakedScene* scene)
 {
     bakedSpheres_Free(&scene->spheres);
+    bakedBoxes_Free(&scene->boxes);
     bakedMaterials_Free(&scene->materials);
 }
 
@@ -32,23 +33,11 @@ void scene_Bake(Scene* scene, BakedScene* baked)
 
 int scene_Raycast(HitInfo* outHitInfo, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
 {
-    outHitInfo->distance = -1;
-    HitInfo localHit;
-    int totalHitCount = 0;
+    outHitInfo->distance = MFLOAT_MAX;
+    size_t hitCount = 0;
 
-    int hitCountSpheres = scene_RaycastSpheres(&localHit, scene, ray, minDist, maxDist);
-    totalHitCount += hitCountSpheres;
-    if (hitCountSpheres > 0)
-        *outHitInfo = localHit;
+    scene_RaycastSpheres(outHitInfo, &hitCount, scene, ray, minDist, maxDist);
+    scene_RaycastBoxes(outHitInfo, &hitCount, scene, ray, minDist, maxDist);
 
-    int hitCountBoxes = scene_RaycastBoxes(&localHit, scene, ray, minDist, maxDist);
-    totalHitCount += hitCountBoxes;
-    if (hitCountBoxes > 0) {
-        if (outHitInfo->distance == -1)
-            *outHitInfo = localHit;
-        else if (outHitInfo->distance != -1)
-            _raycast_ExchangeHit(outHitInfo, &localHit, hitCountBoxes + hitCountSpheres);
-    }
-
-    return totalHitCount;
+    return hitCount;
 }
