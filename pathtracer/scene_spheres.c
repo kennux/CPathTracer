@@ -117,12 +117,34 @@ void _scene_BakeSpheres(Scene* scene, BakedScene* baked)
     bakedSpheres_Create(&baked->spheres, scene->spheres, scene->materials, scene->sphereCount, scene->materialCount);
 }
 
-void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene, Ray* ray, mfloat minDist, mfloat maxDist)
+void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, const BakedScene* scene, const Ray* ray, const mfloat minDist, const mfloat maxDist)
 {
     // Prep packs
     SIMD_ALIGN Vec3f_Pack packOc;
     SIMD_ALIGN AlignedFloatPack packDot;
     SIMD_ALIGN AlignedFloatPack packLen;
+
+#if SIMD == 1
+#if SIMD_MATH_WIDTH == 4
+    __m128 rayOriginX = _mm_broadcast_ss(&ray->origin.x);
+    __m128 rayOriginY = _mm_broadcast_ss(&ray->origin.y);
+    __m128 rayOriginZ = _mm_broadcast_ss(&ray->origin.z);
+
+    __m128 rayDirX = _mm_broadcast_ss(&ray->direction.x);
+    __m128 rayDirY = _mm_broadcast_ss(&ray->direction.y);
+    __m128 rayDirZ = _mm_broadcast_ss(&ray->direction.z);
+    __m128 comparisonVal = _mm_set1_ps(0);
+#elif SIMD_MATH_WIDTH == 8
+    __m256 rayOriginX = _mm256_broadcast_ss(&ray->origin.x);
+    __m256 rayOriginY = _mm256_broadcast_ss(&ray->origin.y);
+    __m256 rayOriginZ = _mm256_broadcast_ss(&ray->origin.z);
+
+    __m256 rayDirX = _mm256_broadcast_ss(&ray->direction.x);
+    __m256 rayDirY = _mm256_broadcast_ss(&ray->direction.y);
+    __m256 rayDirZ = _mm256_broadcast_ss(&ray->direction.z);
+    __m256 comparisonVal = _mm256_set1_ps(0);
+#endif
+#endif
 
     // Spheres
     BakedSpheres* spheres = &scene->spheres;
@@ -131,10 +153,6 @@ void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene,
     {
 #if SIMD == 1
 #if SIMD_MATH_WIDTH == 4
-        __m128 rayOriginX = _mm_broadcast_ss(&ray->origin.x);
-        __m128 rayOriginY = _mm_broadcast_ss(&ray->origin.y);
-        __m128 rayOriginZ = _mm_broadcast_ss(&ray->origin.z);
-
         __m128 centerX = _mm_load_ps(&spheres->soaCenter.x[packIdx * SIMD_MATH_WIDTH]);
         __m128 centerY = _mm_load_ps(&spheres->soaCenter.y[packIdx * SIMD_MATH_WIDTH]);
         __m128 centerZ = _mm_load_ps(&spheres->soaCenter.z[packIdx * SIMD_MATH_WIDTH]);
@@ -142,10 +160,6 @@ void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene,
         __m128 originToCenterX = _mm_sub_ps(rayOriginX, centerX);
         __m128 originToCenterY = _mm_sub_ps(rayOriginY, centerY);
         __m128 originToCenterZ = _mm_sub_ps(rayOriginZ, centerZ);
-
-        __m128 rayDirX = _mm_broadcast_ss(&ray->direction.x);
-        __m128 rayDirY = _mm_broadcast_ss(&ray->direction.y);
-        __m128 rayDirZ = _mm_broadcast_ss(&ray->direction.z);
 
         __m128 dotX = _mm_mul_ps(rayDirX, originToCenterX);
         __m128 dotY = _mm_mul_ps(rayDirY, originToCenterY);
@@ -160,14 +174,9 @@ void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene,
         _mm_store_ps(&packOc.z, originToCenterZ);
 
         // si_f_any_lte(&packDot, 0);
-        __m128 comparisonVal = _mm_set1_ps(0);
         __m128 cmp = _mm_cmp_ps(dot, comparisonVal, _CMP_LE_OQ);
         SimdCompareMask mask = _mm_movemask_ps(cmp);
 #elif SIMD_MATH_WIDTH == 8
-        __m256 rayOriginX = _mm256_broadcast_ss(&ray->origin.x);
-        __m256 rayOriginY = _mm256_broadcast_ss(&ray->origin.y);
-        __m256 rayOriginZ = _mm256_broadcast_ss(&ray->origin.z);
-
         __m256 centerX = _mm256_load_ps(&spheres->soaCenter.x[packIdx * SIMD_MATH_WIDTH]);
         __m256 centerY = _mm256_load_ps(&spheres->soaCenter.y[packIdx * SIMD_MATH_WIDTH]);
         __m256 centerZ = _mm256_load_ps(&spheres->soaCenter.z[packIdx * SIMD_MATH_WIDTH]);
@@ -175,10 +184,6 @@ void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene,
         __m256 originToCenterX = _mm256_sub_ps(rayOriginX, centerX);
         __m256 originToCenterY = _mm256_sub_ps(rayOriginY, centerY);
         __m256 originToCenterZ = _mm256_sub_ps(rayOriginZ, centerZ);
-
-        __m256 rayDirX = _mm256_broadcast_ss(&ray->direction.x);
-        __m256 rayDirY = _mm256_broadcast_ss(&ray->direction.y);
-        __m256 rayDirZ = _mm256_broadcast_ss(&ray->direction.z);
 
         __m256 dotX = _mm256_mul_ps(rayDirX, originToCenterX);
         __m256 dotY = _mm256_mul_ps(rayDirY, originToCenterY);
@@ -193,7 +198,6 @@ void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene,
         _mm256_store_ps(&packOc.z, originToCenterZ);
 
         // si_f_any_lte(&packDot, 0);
-        __m256 comparisonVal = _mm256_set1_ps(0);
         __m256 cmp = _mm256_cmp_ps(dot, comparisonVal, _CMP_LE_OQ);
         SimdCompareMask mask = _mm256_movemask_ps(cmp);
 #endif
@@ -241,6 +245,7 @@ void scene_RaycastSpheres(HitInfo* hitInfo, size_t* hitCount, BakedScene* scene,
 
             size_t itStart = packIdx * SIMD_MATH_WIDTH;
             size_t itEnd = min(itStart + SIMD_MATH_WIDTH, spheres->sphereCount);
+            #pragma clang loop unroll(full)
             for (size_t instIdx = 0; instIdx < SIMD_MATH_WIDTH; instIdx++) {
 
                 if ((mask & (1 << instIdx)) == 0)

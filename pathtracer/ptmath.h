@@ -67,9 +67,9 @@ SIMD_ALIGN typedef struct Vec3f_Pack
 
 SIMD_ALIGN typedef struct Vec3f_SoA
 {
-    SIMD_ALIGN mfloat* x;
-    SIMD_ALIGN mfloat* y;
-    SIMD_ALIGN mfloat* z;
+    mfloat* x;
+    mfloat* y;
+    mfloat* z;
 } Vec3f_SoA;
 
 SIMD_ALIGN typedef int SimdCompareMask;

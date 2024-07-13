@@ -142,7 +142,7 @@ void _material_computeLightRayHit(Ray* rayIn, Ray* lightRay, HitInfo* hit, HitIn
     p_v3f_add_v3f(outLight, outLight, &lightLocal);
 }
 
-void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, BakedScene* scene, BakedMaterials* materials, Vec3f* outLight, RandomState* random)
+void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, const BakedScene* scene, const BakedMaterials* materials, Vec3f* outLight, RandomState* random)
 {
     Ray lightRay;
     HitInfo lightHit;

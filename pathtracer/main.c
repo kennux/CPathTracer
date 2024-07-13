@@ -62,7 +62,7 @@ Scene createScene()
 
     // Create spheres
     scene.spheres = malloc(sizeof(Sphere) * 59);
-    scene.sphereCount = 59;
+    scene.sphereCount = 9;
     Sphere* editSphere = &scene.spheres[0];
     editSphere->radius = 100.0f;
     editSphere->center = vec3f(0, -100.5f, -1);
@@ -211,7 +211,7 @@ void testRng(RandomState* state)
 #define SAMPLES_PER_ITERATION 8
 #define WIDTH 640
 #define HEIGHT 320
-#define THREAD_COUNT 32
+#define THREAD_COUNT 1
 
 int main(void) {
     GLFWwindow* window;

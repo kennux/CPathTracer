@@ -36,6 +36,10 @@ Camera camera_Construct(Vec3f lookFrom, Vec3f lookAt, Vec3f vup, float vfov, flo
     return camera;
 }
 
+
+THREAD_LOCAL SIMD_ALIGN Vec3f_Pack packOffset1, packOffset2, packOffset, packRayOrigin, packRayDir;
+THREAD_LOCAL SIMD_ALIGN AlignedFloatPack rndMulLensU, rndMulLensV;
+
 void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, float v, RandomState* rndState)
 {
     Vec3f horizontalU, verticalV, rayDirBase;
@@ -45,8 +49,6 @@ void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, floa
     p_v3f_add_v3f(&rayDirBase, &rayDirBase, &verticalV);
     p_v3f_sub_v3f(&rayDirBase, &rayDirBase, &camera->origin);
 
-    Vec3f_Pack packOffset1, packOffset2, packOffset, packRayOrigin, packRayDir;
-    AlignedFloatPack rndMulLensU, rndMulLensV;
     for (size_t i = 0; i < rayCount; i += SIMD_MATH_WIDTH)
     {
         Vec3f_Pack randomVec;
@@ -71,6 +73,7 @@ void camera_GetRays(Ray *outRays, size_t rayCount, Camera* camera, float u, floa
 
         sip_v_normalizeUnsafe_p(&packRayDir, &packRayDir);
 
+        #pragma clang loop unroll(full)
         for (size_t j = 0; j < SIMD_MATH_WIDTH; j++)
         {
             size_t rayIdx = i + j;
