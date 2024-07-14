@@ -45,7 +45,7 @@ typedef struct BakedMaterials
     size_t materialCount;
 } BakedMaterials;
 
-int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Vec3f* light, Vec3f* emissive, Ray* ray, uint64_t* rayCount, RandomState* random);
+int material_Scatter(const HitInfo* hitInfo, const BakedScene* scene, const BakedMaterials* materials, const size_t matIndex, Vec3f* attenuation, Vec3f* light, Vec3f* emissive, Ray* ray, uint64_t* rayCount, RandomState* random);
 
 BakedMaterials material_Bake(Material* materials, size_t count);
 void bakedMaterials_Free(BakedMaterials* materials);

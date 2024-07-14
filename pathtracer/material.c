@@ -34,7 +34,7 @@ BakedMaterials material_Bake(Material* materials, size_t count)
     return mats;
 }
 
-int material_Scatter(HitInfo* hitInfo, BakedScene* scene, BakedMaterials* materials, size_t matIndex, Vec3f* attenuation, Vec3f* light, Vec3f* emissive, Ray* ray, uint64_t* rayCount, RandomState* random)
+int material_Scatter(const HitInfo* hitInfo, const BakedScene* scene, const BakedMaterials* materials, const size_t matIndex, Vec3f* attenuation, Vec3f* light, Vec3f* emissive, Ray* ray, uint64_t* rayCount, RandomState* random)
 {
     switch (materials->type[matIndex])
     {

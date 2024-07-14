@@ -207,11 +207,11 @@ void testRng(RandomState* state)
     free(bmpData);
 }
 
-#define INITIAL_SAMPLES 8
-#define SAMPLES_PER_ITERATION 8
+#define INITIAL_SAMPLES 512
+#define SAMPLES_PER_ITERATION 512
 #define WIDTH 640
 #define HEIGHT 320
-#define THREAD_COUNT 1
+#define THREAD_COUNT 32
 
 int main(void) {
     GLFWwindow* window;
