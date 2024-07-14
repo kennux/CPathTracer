@@ -11,6 +11,7 @@ typedef struct TraceParameters
 {
     int backbufferWidth;
     int backbufferHeight;
+    int multiSamplingSteps;
 
     BakedScene* scene;
     Camera* camera;

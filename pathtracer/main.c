@@ -207,10 +207,11 @@ void testRng(RandomState* state)
     free(bmpData);
 }
 
-#define INITIAL_SAMPLES 512
-#define SAMPLES_PER_ITERATION 512
+#define INITIAL_SAMPLES 32
+#define SAMPLES_PER_ITERATION 32
 #define WIDTH 640
 #define HEIGHT 320
+#define MS_STEPS 0
 #define THREAD_COUNT 32
 
 int main(void) {
@@ -261,6 +262,7 @@ int main(void) {
     params.backbufferHeight = textureHeight;
     params.scene = &bakedScene;
     params.samplesPerPixel = INITIAL_SAMPLES;
+    params.multiSamplingSteps = MS_STEPS;
     params.camera = &cam;
     params.maxBounces = 6;
     params.maxDepth = 1000000;

@@ -4,7 +4,7 @@
 #include "scene.h"
 #include "material_internal.h"
 
-void _material_computeLightRay_Sphere(Ray* rayIn, Ray* lightRay, HitInfo* hit, BakedScene* scene, size_t sphereIdx, RandomState* random, mfloat* lightIntensity)
+static void _material_computeLightRay_Sphere(Ray* lightRay, HitInfo* hit, BakedScene* scene, size_t sphereIdx, RandomState* random, mfloat* lightIntensity)
 {
     Vec3f sw, su, sv, sphereCenterToHit;
 
@@ -46,7 +46,7 @@ void _material_computeLightRay_Sphere(Ray* rayIn, Ray* lightRay, HitInfo* hit, B
     *lightIntensity = *lightIntensity / PI;
 }
 
-void _material_computeLightRay_Box(Ray* rayIn, Ray* lightRay, HitInfo* hit, BakedScene* scene, size_t boxIdx, RandomState* random, mfloat* lightIntensity)
+static void _material_computeLightRay_Box(Ray* lightRay, HitInfo* hit, BakedScene* scene, size_t boxIdx, RandomState* random, mfloat* lightIntensity)
 {
     Vec3f boxCenter, boxSizeHalf, randomPointOnBox, direction;
 
@@ -122,7 +122,7 @@ void _material_computeLightRay_Box(Ray* rayIn, Ray* lightRay, HitInfo* hit, Bake
     *lightIntensity = (faceArea * cosTheta) / PI;
 }
 
-void _material_computeLightRayHit(Ray* rayIn, Ray* lightRay, HitInfo* hit, HitInfo* lightHit, mfloat lightAmtFactor, Vec3f* outLight, BakedMaterials* materials, RandomState* random)
+static void _material_computeLightRayHit(const Ray* rayIn, const Ray* lightRay, const HitInfo* hit, const HitInfo* lightHit, const mfloat lightAmtFactor, Vec3f* outLight, const BakedMaterials* materials, RandomState* random)
 {
     Vec3f nl, lightLocal;
     mfloat nDotL;
@@ -156,7 +156,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, const Bake
         if (hit->hitObjectPtr == &scene->spheres.center[i])
             continue; // Skip self
 
-        _material_computeLightRay_Sphere(rayIn, &lightRay, hit, scene, i, random, &lightIntensity);
+        _material_computeLightRay_Sphere(&lightRay, hit, scene, i, random, &lightIntensity);
         ++*rayCount;
         int hits = scene_Raycast(&lightHit, scene, &lightRay, 0.00001f, 9999999);
         if (hits > 0 && lightHit.hitObjectPtr == &scene->spheres.center[i])
@@ -171,7 +171,7 @@ void _material_Lighting(Ray* rayIn, uint64_t* rayCount, HitInfo* hit, const Bake
         if (hit->hitObjectPtr == &scene->boxes.center[i])
             continue; // Skip self
 
-        _material_computeLightRay_Box(rayIn, &lightRay, hit, scene, i, random, &lightIntensity);
+        _material_computeLightRay_Box(&lightRay, hit, scene, i, random, &lightIntensity);
         ++*rayCount;
         int hits = scene_Raycast(&lightHit, scene, &lightRay, 0.00001f, 9999999);
         if (hits > 0 && lightHit.hitObjectPtr == &scene->boxes.center[i])

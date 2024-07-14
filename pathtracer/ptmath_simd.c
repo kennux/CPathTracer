@@ -383,16 +383,16 @@ void sip_v_normalizeUnsafe_p(Vec3f_Pack* result, Vec3f_Pack *v0)
 #if SIMD_MATH_WIDTH == 4
     sip_v_lenSq_p(&tmpFloats, v0);
     __m128 xmm_lenSq = _mm_load_ps(&tmpFloats);
-    __m128 xmm_len = _mm_sqrt_ps(xmm_lenSq);
+    __m128 xmm_rsqrt = _mm_rsqrt_ps(xmm_lenSq);
 
     __m128 xmm_x = _mm_load_ps(v0->x);
     __m128 xmm_y = _mm_load_ps(v0->y);
     __m128 xmm_z = _mm_load_ps(v0->z);
 
     // Divide by len
-    __m128 xmm_resX = _mm_div_ps(xmm_x, xmm_len);
-    __m128 xmm_resY = _mm_div_ps(xmm_y, xmm_len);
-    __m128 xmm_resZ = _mm_div_ps(xmm_z, xmm_len);
+    __m128 xmm_resX = _mm_mul_ps(xmm_x, xmm_rsqrt);
+    __m128 xmm_resY = _mm_mul_ps(xmm_y, xmm_rsqrt);
+    __m128 xmm_resZ = _mm_mul_ps(xmm_z, xmm_rsqrt);
 
     _mm_store_ps(&result->x, xmm_resX);
     _mm_store_ps(&result->y, xmm_resY);
@@ -400,16 +400,16 @@ void sip_v_normalizeUnsafe_p(Vec3f_Pack* result, Vec3f_Pack *v0)
 #elif SIMD_MATH_WIDTH == 8
     sip_v_lenSq_p(&tmpFloats, v0);
     __m256 xmm_lenSq = _mm256_load_ps(&tmpFloats);
-    __m256 xmm_len = _mm256_sqrt_ps(xmm_lenSq);
+    __m256 xmm_rsqrt = _mm256_rsqrt_ps(xmm_lenSq);
 
     __m256 xmm_x = _mm256_load_ps(v0->x);
     __m256 xmm_y = _mm256_load_ps(v0->y);
     __m256 xmm_z = _mm256_load_ps(v0->z);
 
     // Divide by len
-    __m256 xmm_resX = _mm256_div_ps(xmm_x, xmm_len);
-    __m256 xmm_resY = _mm256_div_ps(xmm_y, xmm_len);
-    __m256 xmm_resZ = _mm256_div_ps(xmm_z, xmm_len);
+    __m256 xmm_resX = _mm256_mul_ps(xmm_x, xmm_rsqrt);
+    __m256 xmm_resY = _mm256_mul_ps(xmm_y, xmm_rsqrt);
+    __m256 xmm_resZ = _mm256_mul_ps(xmm_z, xmm_rsqrt);
 
     _mm256_store_ps(&result->x, xmm_resX);
     _mm256_store_ps(&result->y, xmm_resY);

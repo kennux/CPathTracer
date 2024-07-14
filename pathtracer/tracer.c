@@ -137,6 +137,12 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
     size_t totalSamples = alreadyDoneSamplesOnBackbuffer + params.samplesPerPixel;
     mfloat lerpT = (mfloat)alreadyDoneSamplesOnBackbuffer / (mfloat)totalSamples;
 
+    mfloat texelSizeX = 1.0f / params.backbufferWidth;
+    mfloat texelSizeY = 1.0f / params.backbufferHeight;
+
+    mfloat msStepSizeX = texelSizeX / (mfloat)max(1, params.multiSamplingSteps);
+    mfloat msStepSizeY = texelSizeY / (mfloat)max(1, params.multiSamplingSteps);
+
     // RGB
     Vec3f color;
     Ray* rays = malloc(params.samplesPerPixel * sizeof(Ray));
@@ -156,62 +162,74 @@ void traceTile(TraceTileParameters tileParams, mfloat* backbuffer, uint64_t* ray
             mfloat u = x * invWidth;
             int colorIndex = (yBackbufferIdx + x) * 4;
 
-            camera_GetRays(rays, params.samplesPerPixel, params.camera, u, v, rand);
-            for (int r = 0; r < params.samplesPerPixel; r++)
+            for (int msX = -params.multiSamplingSteps; msX < params.multiSamplingSteps + 1; msX++)
+                for (int msY = -params.multiSamplingSteps; msY < params.multiSamplingSteps + 1; msY++)
             {
-                // Get ray
-                ray = rays[r];
+                mfloat localU = u;
+                mfloat localV = v;
 
-                Vec3f finalColor = vec3f(0,0,0);
-                Vec3f attenAccum = vec3f(1,1,1);
-                size_t bounceCount = 0;
-                while (bounceCount < params.maxBounces)
+                if (params.multiSamplingSteps > 0)
                 {
-                    // Trace ray
-                    HitInfo hitInfo;
-                    (*rayCount)++;
-                    int hits = scene_Raycast(&hitInfo, params.scene, &ray, 0.01, params.maxDepth);
-                    if (hits > 0 && hitInfo.matIdx < params.scene->materials.materialCount)
+                    localU += (mfloat)msX * msStepSizeX;
+                    localV += (mfloat)msY * msStepSizeY;
+                }
+
+                camera_GetRays(rays, params.samplesPerPixel, params.camera, localU, localV, rand);
+                for (int r = 0; r < params.samplesPerPixel; r++)
+                {
+                    // Get ray
+                    ray = rays[r];
+
+                    Vec3f finalColor = vec3f(0,0,0);
+                    Vec3f attenAccum = vec3f(1,1,1);
+                    size_t bounceCount = 0;
+                    while (bounceCount < params.maxBounces)
                     {
-                        Vec3f attenuation = vec3f(0,0,0);
-                        Vec3f light = vec3f(0,0,0);
-                        Vec3f emission = vec3f(0,0,0);
+                        // Trace ray
+                        HitInfo hitInfo;
+                        (*rayCount)++;
+                        int hits = scene_Raycast(&hitInfo, params.scene, &ray, 0.01, params.maxDepth);
+                        if (hits > 0 && hitInfo.matIdx < params.scene->materials.materialCount)
+                        {
+                            Vec3f attenuation = vec3f(0,0,0);
+                            Vec3f light = vec3f(0,0,0);
+                            Vec3f emission = vec3f(0,0,0);
 
-                        int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &light, &emission, &ray, rayCount, rand);
+                            int scatter = material_Scatter(&hitInfo, params.scene, &params.scene->materials, hitInfo.matIdx, &attenuation, &light, &emission, &ray, rayCount, rand);
 
-                        Vec3f eAndL;
-                        p_v3f_add_v3f(&eAndL, &light, &emission);
+                            Vec3f eAndL;
+                            p_v3f_add_v3f(&eAndL, &light, &emission);
 
-                        Vec3f attenAccumMulEAndL;
-                        p_v3f_mul_v3f(&attenAccumMulEAndL, &attenAccum, &eAndL);
-                        p_v3f_add_v3f(&finalColor, &finalColor, &attenAccumMulEAndL);
+                            Vec3f attenAccumMulEAndL;
+                            p_v3f_mul_v3f(&attenAccumMulEAndL, &attenAccum, &eAndL);
+                            p_v3f_add_v3f(&finalColor, &finalColor, &attenAccumMulEAndL);
 
-                        p_v3f_mul_v3f(&attenAccum, &attenAccum, &attenuation);
+                            p_v3f_mul_v3f(&attenAccum, &attenAccum, &attenuation);
 
-                        if (scatter == 0) {
+                            if (scatter == 0) {
+                                Vec3f tmp;
+                                p_v3f_mul_v3f(&tmp, &attenAccum, &params.scene->materials.emissive[hitInfo.matIdx]);
+                                p_v3f_add_v3f(&finalColor, &finalColor, &tmp);
+                                break;
+                            }
+                        }
+                        else
+                        {
                             Vec3f tmp;
-                            p_v3f_mul_v3f(&tmp, &attenAccum, &params.scene->materials.emissive[hitInfo.matIdx]);
+                            p_v3f_mul_v3f(&tmp, &attenAccum, &params.scene->ambientLight);
                             p_v3f_add_v3f(&finalColor, &finalColor, &tmp);
                             break;
                         }
-                    }
-                    else
-                    {
-                        Vec3f tmp;
-                        p_v3f_mul_v3f(&tmp, &attenAccum, &params.scene->ambientLight);
-                        p_v3f_add_v3f(&finalColor, &finalColor, &tmp);
-                        break;
+
+                        bounceCount++;
                     }
 
-                    bounceCount++;
+                    p_v3f_add_v3f(&color, &finalColor, &color);
                 }
 
-                p_v3f_add_v3f(&color, &finalColor, &color);
+                p_v3f_mul_f(&color, &color, invSamplesPerPixel);
+                p_v3f_clamp01(&color, &color);
             }
-
-            p_v3f_mul_f(&color, &color, invSamplesPerPixel);
-
-            p_v3f_clamp01(&color, &color);
 
             // prev * lerpFac + col * (1-lerpFac);
             backbuffer[colorIndex + 0] = backbuffer[colorIndex + 0] * lerpT + color.x * (1-lerpT);
